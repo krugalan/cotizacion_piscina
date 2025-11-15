@@ -319,6 +319,7 @@ function App() {
     const finalTotal = subtotal - discount
 
     setQuoteData({
+      // Información calculada
       volume: volume.toFixed(2),
       ceramicArea: ceramicArea.toFixed(2),
       thermalFloorArea: thermalFloorArea.toFixed(2),
@@ -328,22 +329,37 @@ function App() {
       subtotal: subtotal.toFixed(2),
       discount: discount.toFixed(2),
       totalCost: finalTotal.toFixed(2),
-      clientName: formData.clientName || 'Cliente',
-      clientEmail: formData.clientEmail || '',
-      clientPhone: formData.clientPhone || '',
-      poolType: formData.poolType,
-      workType: formData.workType,
-      dimensions: {
-        length: formData.length,
-        width: formData.width,
-        depth: formData.depth
-      },
       date: new Date().toLocaleDateString('es-ES', { 
         day: 'numeric', 
         month: 'long', 
         year: 'numeric' 
       }),
-      additionalNotes: formData.additionalNotes
+      // Información completa del formulario
+      formData: {
+        // Información del cliente
+        clientName: formData.clientName || 'Cliente',
+        clientEmail: formData.clientEmail || '',
+        clientPhone: formData.clientPhone || '',
+        // Dimensiones
+        length: formData.length,
+        width: formData.width,
+        depth: formData.depth,
+        poolType: formData.poolType,
+        // Tipo de trabajo
+        workType: formData.workType,
+        // Materiales
+        materials: { ...formData.materials },
+        // Reparaciones específicas
+        repairs: { ...formData.repairs },
+        // Mano de obra
+        laborHours: formData.laborHours,
+        laborRate: formData.laborRate,
+        // Otros factores
+        accessDifficulty: formData.accessDifficulty,
+        permits: formData.permits,
+        excavation: formData.excavation,
+        additionalNotes: formData.additionalNotes || ''
+      }
     })
     
     setShowModal(true)
@@ -400,6 +416,174 @@ function App() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(value)
+  }
+
+  // Función para mapear el tipo de trabajo a texto legible
+  const getWorkTypeLabel = (workType) => {
+    const workTypeMap = {
+      'construction': 'Construcción Nueva',
+      'repair': 'Reparación',
+      'renovation': 'Renovación',
+      'maintenance': 'Mantenimiento'
+    }
+    return workTypeMap[workType] || workType
+  }
+
+  // Función para preparar los datos para n8n
+  const prepareN8NData = (quoteData) => {
+    const formData = quoteData.formData || {}
+    
+    return {
+      // Información principal solicitada
+      nombreCompleto: formData.clientName || '',
+      email: formData.clientEmail || '',
+      telefono: formData.clientPhone || '',
+      tipoTrabajo: getWorkTypeLabel(formData.workType || ''),
+      
+      // Presupuesto calculado
+      presupuesto: {
+        subtotal: parseFloat(quoteData.subtotal || 0),
+        descuento: parseFloat(quoteData.discount || 0),
+        total: parseFloat(quoteData.totalCost || 0),
+        moneda: 'USD',
+        fecha: quoteData.date || '',
+        detalles: {
+          materiales: quoteData.materialCosts || [],
+          trabajo: quoteData.workCosts || [],
+          adicionales: quoteData.additionalCosts || []
+        },
+        dimensiones: {
+          tipo: formData.poolType || '',
+          largo: formData.length || '',
+          ancho: formData.width || '',
+          profundidad: formData.depth || '',
+          volumen: parseFloat(quoteData.volume || 0),
+          areaCeramica: parseFloat(quoteData.ceramicArea || 0),
+          areaPisoTermico: parseFloat(quoteData.thermalFloorArea || 0)
+        },
+        notas: formData.additionalNotes || ''
+      },
+      
+      // Información completa del formulario (para uso futuro)
+      informacionCompleta: {
+        // Información del cliente
+        cliente: {
+          nombreCompleto: formData.clientName || '',
+          email: formData.clientEmail || '',
+          telefono: formData.clientPhone || ''
+        },
+        
+        // Dimensiones y tipo de piscina
+        piscina: {
+          tipo: formData.poolType || '',
+          largo: formData.length || '',
+          ancho: formData.width || '',
+          profundidad: formData.depth || '',
+          volumen: parseFloat(quoteData.volume || 0),
+          areaCeramica: parseFloat(quoteData.ceramicArea || 0),
+          areaPisoTermico: parseFloat(quoteData.thermalFloorArea || 0)
+        },
+        
+        // Tipo de trabajo
+        trabajo: {
+          tipo: formData.workType || '',
+          tipoTexto: getWorkTypeLabel(formData.workType || '')
+        },
+        
+        // Materiales seleccionados
+        materiales: {
+          ceramicos: formData.materials?.ceramics || false,
+          calidadCeramicos: formData.materials?.tiles || 'standard',
+          pisoTermico: formData.materials?.thermalFloor || false,
+          bomba: formData.materials?.pump || false,
+          filtro: formData.materials?.filter || false,
+          iluminacion: formData.materials?.lighting || false,
+          calefaccion: formData.materials?.heating || false,
+          cubierta: formData.materials?.cover || false,
+          escalera: formData.materials?.ladder || false
+        },
+        
+        // Reparaciones específicas (si aplica)
+        reparaciones: {
+          filtraciones: formData.repairs?.leaks || false,
+          grietas: formData.repairs?.cracks || false,
+          revestimiento: formData.repairs?.coating || false,
+          plomeria: formData.repairs?.plumbing || false,
+          electrica: formData.repairs?.electrical || false,
+          limpieza: formData.repairs?.cleaning || false
+        },
+        
+        // Mano de obra
+        manoDeObra: {
+          horas: formData.laborHours || '',
+          tarifaPorHora: formData.laborRate || 50,
+          costoTotal: quoteData.workCosts?.find(item => item.name.includes('Mano de obra'))?.total || 0
+        },
+        
+        // Otros factores
+        otrosFactores: {
+          dificultadAcceso: formData.accessDifficulty || 'normal',
+          incluyePermisos: formData.permits || false,
+          incluyeExcavacion: formData.excavation || false,
+          notasAdicionales: formData.additionalNotes || ''
+        },
+        
+        // Detalles del presupuesto
+        detallesPresupuesto: {
+          materiales: quoteData.materialCosts || [],
+          trabajo: quoteData.workCosts || [],
+          adicionales: quoteData.additionalCosts || [],
+          subtotal: parseFloat(quoteData.subtotal || 0),
+          descuento: parseFloat(quoteData.discount || 0),
+          total: parseFloat(quoteData.totalCost || 0),
+          moneda: 'USD'
+        }
+      }
+    }
+  }
+
+  // Función para descargar el presupuesto como JSON
+  const downloadQuoteAsJSON = (quoteData) => {
+    const n8nData = prepareN8NData(quoteData)
+    const dataStr = JSON.stringify(n8nData, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    const clientName = quoteData.formData?.clientName || 'Cliente'
+    link.download = `presupuesto_${clientName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  // Función para enviar datos a webhook de n8n (opcional)
+  const sendToN8N = async (quoteData, webhookUrl) => {
+    if (!webhookUrl) {
+      alert('Por favor, configure la URL del webhook de n8n')
+      return
+    }
+
+    const n8nData = prepareN8NData(quoteData)
+    
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(n8nData)
+      })
+
+      if (response.ok) {
+        alert('Datos enviados exitosamente a n8n')
+      } else {
+        alert('Error al enviar datos a n8n')
+      }
+    } catch (error) {
+      console.error('Error al enviar a n8n:', error)
+      alert('Error al enviar datos a n8n: ' + error.message)
+    }
   }
 
   return (
@@ -799,17 +983,31 @@ function App() {
           quoteData={quoteData} 
           onClose={closeModal}
           formatCurrency={formatCurrency}
+          onDownloadJSON={() => downloadQuoteAsJSON(quoteData)}
+          onSendToN8N={(webhookUrl) => sendToN8N(quoteData, webhookUrl)}
         />
       )}
     </div>
   )
 }
 
-function QuoteModal({ quoteData, onClose, formatCurrency }) {
+function QuoteModal({ quoteData, onClose, formatCurrency, onDownloadJSON, onSendToN8N }) {
+  const [webhookUrl, setWebhookUrl] = useState('')
+  const [showWebhookInput, setShowWebhookInput] = useState(false)
+
+  const formData = quoteData.formData || {}
   const poolTypeNames = {
     rectangular: 'Rectangular',
     circular: 'Circular',
     oval: 'Oval'
+  }
+
+  const handleSendToN8N = () => {
+    if (webhookUrl.trim()) {
+      onSendToN8N(webhookUrl.trim())
+    } else {
+      setShowWebhookInput(true)
+    }
   }
 
   return (
@@ -834,12 +1032,12 @@ function QuoteModal({ quoteData, onClose, formatCurrency }) {
 
           {/* Información del cliente */}
           <div className="quote-client-info">
-            <div className="quote-client-name">{quoteData.clientName}</div>
-            {quoteData.clientEmail && (
-              <div className="quote-client-detail">{quoteData.clientEmail}</div>
+            <div className="quote-client-name">{formData.clientName}</div>
+            {formData.clientEmail && (
+              <div className="quote-client-detail">{formData.clientEmail}</div>
             )}
-            {quoteData.clientPhone && (
-              <div className="quote-client-detail">{quoteData.clientPhone}</div>
+            {formData.clientPhone && (
+              <div className="quote-client-detail">{formData.clientPhone}</div>
             )}
           </div>
 
@@ -847,14 +1045,14 @@ function QuoteModal({ quoteData, onClose, formatCurrency }) {
           <div className="quote-project-info">
             <div className="quote-project-detail">
               <strong>Tipo de trabajo:</strong> {
-                quoteData.workType === 'construction' ? 'Construcción Nueva' :
-                quoteData.workType === 'repair' ? 'Reparación' :
-                quoteData.workType === 'renovation' ? 'Renovación' :
+                formData.workType === 'construction' ? 'Construcción Nueva' :
+                formData.workType === 'repair' ? 'Reparación' :
+                formData.workType === 'renovation' ? 'Renovación' :
                 'Mantenimiento'
               }
             </div>
             <div className="quote-project-detail">
-              <strong>Piscina:</strong> {poolTypeNames[quoteData.poolType]} - {quoteData.dimensions.length}m × {quoteData.dimensions.width}m × {quoteData.dimensions.depth}m
+              <strong>Piscina:</strong> {poolTypeNames[formData.poolType]} - {formData.length}m × {formData.width}m × {formData.depth}m
             </div>
             <div className="quote-project-detail">
               <strong>Volumen:</strong> {quoteData.volume} m³ | <strong>Área cerámica:</strong> {quoteData.ceramicArea} m²
@@ -974,9 +1172,9 @@ function QuoteModal({ quoteData, onClose, formatCurrency }) {
           <div className="quote-footer-section">
             <div className="quote-notes">
               <strong>Nota:</strong> La cotización es válida por 7 días. La fecha de ejecución del servicio se coordinará según disponibilidad.
-              {quoteData.additionalNotes && (
+              {formData.additionalNotes && (
                 <div style={{ marginTop: '0.5rem' }}>
-                  <strong>Notas adicionales:</strong> {quoteData.additionalNotes}
+                  <strong>Notas adicionales:</strong> {formData.additionalNotes}
                 </div>
               )}
             </div>
@@ -989,11 +1187,11 @@ function QuoteModal({ quoteData, onClose, formatCurrency }) {
           {/* Footer con ondas */}
           <div className="quote-footer-wave">
             <div className="quote-footer-content">
-              {quoteData.clientPhone && (
-                <span className="quote-footer-item">📞 {quoteData.clientPhone}</span>
+              {formData.clientPhone && (
+                <span className="quote-footer-item">📞 {formData.clientPhone}</span>
               )}
-              {quoteData.clientEmail && (
-                <span className="quote-footer-item">✉️ {quoteData.clientEmail}</span>
+              {formData.clientEmail && (
+                <span className="quote-footer-item">✉️ {formData.clientEmail}</span>
               )}
               <span className="quote-footer-item">@poolsmart</span>
             </div>
@@ -1001,12 +1199,55 @@ function QuoteModal({ quoteData, onClose, formatCurrency }) {
         </div>
 
         <div className="modal-actions">
-          <button className="btn btn-primary" onClick={() => window.print()}>
-            Imprimir Presupuesto
-          </button>
-          <button className="btn btn-secondary" onClick={onClose}>
-            Cerrar
-          </button>
+          {!showWebhookInput ? (
+            <>
+              <button className="btn btn-primary" onClick={() => window.print()}>
+                Imprimir Presupuesto
+              </button>
+              <button className="btn btn-primary" onClick={onDownloadJSON} style={{ background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)' }}>
+                📥 Descargar JSON (n8n)
+              </button>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setShowWebhookInput(true)}
+                style={{ background: '#007bff', color: 'white' }}
+              >
+                🔗 Enviar a n8n
+              </button>
+              <button className="btn btn-secondary" onClick={onClose}>
+                Cerrar
+              </button>
+            </>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                <input
+                  type="text"
+                  placeholder="URL del webhook de n8n (ej: https://tu-n8n.com/webhook/...)"
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  className="form-input"
+                  style={{ flex: 1 }}
+                />
+                <button 
+                  className="btn btn-primary" 
+                  onClick={handleSendToN8N}
+                  style={{ background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)' }}
+                >
+                  Enviar
+                </button>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => {
+                    setShowWebhookInput(false)
+                    setWebhookUrl('')
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

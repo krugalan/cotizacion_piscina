@@ -771,23 +771,308 @@ textarea.form-input {
 
 /* Print Styles */
 @media print {
-  .modal-overlay {
-    background: white;
+  @page {
+    size: A4;
+    margin: 0.5cm;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body {
+    background: white !important;
+    margin: 0;
     padding: 0;
+    font-size: 11pt !important;
+  }
+
+  .app-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .header {
+    display: none !important;
+  }
+
+  .form-container {
+    display: none !important;
+  }
+
+  .modal-overlay {
+    position: static !important;
+    background: white !important;
+    padding: 0 !important;
+    display: block !important;
+    overflow: visible !important;
   }
 
   .modal-content {
-    box-shadow: none;
-    max-height: none;
+    position: static !important;
+    box-shadow: none !important;
+    max-height: none !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
   }
 
   .modal-close,
   .modal-actions {
-    display: none;
+    display: none !important;
   }
 
   .quote-document {
-    page-break-inside: avoid;
+    background: white !important;
+    transform: scale(1) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: calc(100vh - 1cm) !important;
+    justify-content: space-between !important;
+  }
+
+  /* Header optimizado - más compacto */
+  .quote-header-wave {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    padding: 0.75rem 1.5rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  .quote-header-wave::after {
+    height: 20px !important;
+    bottom: -15px !important;
+  }
+
+  .quote-logo {
+    font-size: 1.5rem !important;
+    width: 35px !important;
+    height: 35px !important;
+  }
+
+  .quote-company-label {
+    font-size: 0.7rem !important;
+  }
+
+  .quote-company-name {
+    font-size: 0.95rem !important;
+  }
+
+  .quote-date {
+    font-size: 0.8rem !important;
+  }
+
+  .quote-company,
+  .quote-company-label,
+  .quote-company-name,
+  .quote-date {
+    color: white !important;
+  }
+
+  /* Información del cliente - más compacta */
+  .quote-client-info {
+    padding: 0.75rem 1.5rem 0.5rem !important;
+    background: white !important;
+  }
+
+  .quote-client-name {
+    font-size: 1rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .quote-client-detail {
+    font-size: 0.75rem !important;
+    margin-top: 0.1rem !important;
+  }
+
+  /* Información del proyecto - más compacta */
+  .quote-project-info {
+    padding: 0.5rem 1.5rem !important;
+    background: #f5f7fa !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    border-top: 1px solid #e0e0e0 !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+  }
+
+  .quote-project-detail {
+    margin-bottom: 0.25rem !important;
+    font-size: 0.75rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .quote-project-detail:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  /* Títulos de tabla - más compactos */
+  .quote-table-title {
+    padding: 0.5rem 1.5rem 0.25rem !important;
+    font-size: 0.85rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Tablas optimizadas - más compactas */
+  .quote-table-container {
+    padding: 0 1.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .quote-table {
+    font-size: 0.7rem !important;
+  }
+
+  .quote-table thead {
+    background: #1e3a5f !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  .quote-table th {
+    background: #1e3a5f !important;
+    color: white !important;
+    padding: 0.4rem 0.5rem !important;
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .quote-table td {
+    padding: 0.4rem 0.5rem !important;
+    font-size: 0.7rem !important;
+    color: #333 !important;
+  }
+
+  .quote-table tbody tr {
+    border-bottom: 1px solid #e0e0e0 !important;
+  }
+
+  .quote-table tbody tr:nth-child(even) {
+    background: #f9f9f9 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Resumen - más compacto */
+  .quote-summary {
+    padding: 0 1.5rem !important;
+    margin-bottom: 0.5rem !important;
+    gap: 0.25rem !important;
+  }
+
+  .quote-summary-row {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0 !important;
+    width: 250px !important;
+  }
+
+  .quote-summary-total {
+    background: #1e3a5f !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    padding: 0.5rem !important;
+    font-size: 0.9rem !important;
+    margin-top: 0.25rem !important;
+    width: 250px !important;
+  }
+
+  /* Footer section - más compacto */
+  .quote-footer-section {
+    padding: 0 1.5rem 0.5rem !important;
+    gap: 0.75rem !important;
+    margin-top: auto !important;
+  }
+
+  .quote-notes {
+    font-size: 0.7rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .quote-signature {
+    min-width: 150px !important;
+  }
+
+  .quote-signature-line {
+    width: 150px !important;
+    height: 1px !important;
+  }
+
+  .quote-signature-id {
+    font-size: 0.65rem !important;
+  }
+
+  /* Footer wave - más compacto y al final */
+  .quote-footer-wave {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    padding: 0.75rem 1.5rem !important;
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
+  }
+
+  .quote-footer-wave::before {
+    height: 20px !important;
+    top: -15px !important;
+  }
+
+  .quote-footer-content {
+    color: white !important;
+    font-size: 0.7rem !important;
+    gap: 1rem !important;
+  }
+
+  /* Asegurar que todo quepa en una página y el footer quede al final */
+  .quote-document {
+    page-break-inside: auto !important;
+  }
+
+  /* Contenedor principal para distribuir el espacio */
+  .quote-document > * {
+    flex-shrink: 0 !important;
+  }
+
+  .quote-header-wave,
+  .quote-client-info,
+  .quote-project-info {
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    flex-shrink: 0 !important;
+  }
+
+  .quote-table-container {
+    page-break-inside: avoid !important;
+    flex-shrink: 0 !important;
+  }
+
+  .quote-summary {
+    page-break-before: avoid !important;
+    page-break-inside: avoid !important;
+    flex-shrink: 0 !important;
+  }
+
+  .quote-footer-section {
+    page-break-before: avoid !important;
+    page-break-inside: avoid !important;
+    flex-shrink: 0 !important;
+  }
+
+  .quote-footer-wave {
+    page-break-before: avoid !important;
+    flex-shrink: 0 !important;
+    margin-top: auto !important;
   }
 }
 
