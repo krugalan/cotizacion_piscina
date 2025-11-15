@@ -383,24 +383,30 @@ textarea.form-input {
     padding: 0.875rem;
   }
 
-  .quote-footer-section {
-    flex-direction: column;
-    gap: 1.5rem;
-    padding: 0 1.5rem 1.5rem;
-  }
-
-  .quote-notes {
-    width: 100%;
+  .quote-signature-section {
+    padding: 1.5rem 1.5rem 1rem;
+    justify-content: center;
   }
 
   .quote-signature {
     width: 100%;
     min-width: auto;
+    max-width: 250px;
   }
 
   .quote-signature-line {
     width: 100%;
-    max-width: 200px;
+    max-width: 250px;
+  }
+
+  .quote-footer-section {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0 1.5rem 1rem;
+  }
+
+  .quote-notes {
+    width: 100%;
   }
 
   .quote-footer-wave {
@@ -613,6 +619,7 @@ textarea.form-input {
   width: 100%;
   border-collapse: collapse;
   background: white;
+  table-layout: fixed; /* Fijar el layout para controlar anchos */
 }
 
 .quote-table thead {
@@ -629,6 +636,67 @@ textarea.form-input {
   letter-spacing: 0.5px;
 }
 
+/* Anchos específicos para cada columna (tablas con 5 columnas) */
+.quote-table th:nth-child(1),
+.quote-table td:nth-child(1) {
+  width: 35%; /* Descripción - más ancho */
+}
+
+.quote-table th:nth-child(2),
+.quote-table td:nth-child(2) {
+  width: 12%; /* Cantidad */
+  text-align: right;
+}
+
+.quote-table th:nth-child(3),
+.quote-table td:nth-child(3) {
+  width: 10%; /* Und */
+}
+
+.quote-table th:nth-child(4),
+.quote-table td:nth-child(4) {
+  width: 18%; /* Precio Unit. */
+  text-align: right;
+}
+
+.quote-table th:nth-child(5),
+.quote-table td:nth-child(5) {
+  width: 25%; /* Total - suficiente espacio */
+  text-align: right;
+  padding-right: 1.5rem; /* Padding extra a la derecha - mismo para header y celdas */
+  white-space: nowrap; /* Evitar que el total se divida en líneas */
+}
+
+/* Asegurar que el header de TOTAL tenga el mismo padding que las celdas */
+.quote-table th:nth-child(5) {
+  padding-right: 1.5rem; /* Mismo padding que las celdas para alineación vertical */
+}
+
+/* Tablas con 4 columnas (Costos Adicionales) */
+.quote-table-additional th:nth-child(1),
+.quote-table-additional td:nth-child(1) {
+  width: 45% !important; /* Descripción - más ancho cuando no hay Precio Unit. */
+}
+
+.quote-table-additional th:nth-child(2),
+.quote-table-additional td:nth-child(2) {
+  width: 15% !important; /* Cantidad */
+  text-align: right;
+}
+
+.quote-table-additional th:nth-child(3),
+.quote-table-additional td:nth-child(3) {
+  width: 15% !important; /* Und */
+}
+
+.quote-table-additional th:nth-child(4),
+.quote-table-additional td:nth-child(4) {
+  width: 25% !important; /* Total - suficiente espacio */
+  text-align: right;
+  padding-right: 1.5rem !important; /* Padding extra a la derecha */
+  white-space: nowrap !important; /* Evitar que el total se divida en líneas */
+}
+
 .quote-table tbody tr {
   border-bottom: 1px solid #e0e0e0;
 }
@@ -640,6 +708,8 @@ textarea.form-input {
 .quote-table td {
   padding: 1rem;
   color: #333;
+  word-wrap: break-word; /* Permitir que el texto se ajuste */
+  overflow-wrap: break-word;
 }
 
 .quote-table td:last-child {
@@ -649,7 +719,7 @@ textarea.form-input {
 
 /* Summary */
 .quote-summary {
-  padding: 0 2.5rem;
+  padding: 0 2.5rem; /* Mismo padding que quote-table-container */
   margin-bottom: 2rem;
   display: flex;
   flex-direction: column;
@@ -660,11 +730,19 @@ textarea.form-input {
 .quote-summary-row {
   display: flex;
   justify-content: space-between;
-  width: 300px;
+  width: 285px;
   max-width: 100%;
   padding: 0.5rem 0;
   font-size: 0.95rem;
   color: #333;
+}
+
+/* Alinear el valor del subtotal con el título TOTAL de la columna */
+.quote-summary-row span:last-child {
+  text-align: right;
+  padding-right: 1.5rem; /* Mismo padding que el header "TOTAL" para alineación vertical */
+  min-width: 100px; /* Ancho mínimo para mantener alineación */
+  display: inline-block; /* Para que el padding funcione correctamente */
 }
 
 .quote-summary-row.discount {
@@ -685,13 +763,41 @@ textarea.form-input {
   margin-top: 0.5rem;
 }
 
-/* Footer Section */
-.quote-footer-section {
-  padding: 0 2.5rem 2rem;
+/* Sección de firma - debajo del total con más espacio */
+.quote-signature-section {
+  padding: 12rem 2.5rem 3rem; /* El doble de espacio arriba entre TOTAL y firma */
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end; /* Alineado a la derecha como el total */
   align-items: flex-start;
-  gap: 2rem;
+  min-height: 250px; /* Mayor altura mínima para espacio de firma */
+}
+
+.quote-signature {
+  text-align: center;
+  width: 300px; /* Mismo ancho que el total para centrarla con él */
+  max-width: 100%;
+  margin-right: 0;
+}
+
+.quote-signature-line {
+  width: 250px;
+  height: 2px;
+  background: #333;
+  margin: 0 auto 0.5rem; /* Centrada dentro del contenedor de 300px */
+}
+
+.quote-signature-id {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+/* Footer Section - solo notas */
+.quote-footer-section {
+  padding: 0 2.5rem 2.5rem; /* Aún más espacio abajo */
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .quote-notes {
@@ -705,29 +811,13 @@ textarea.form-input {
   color: #333;
 }
 
-.quote-signature {
-  text-align: center;
-  min-width: 200px;
-}
-
-.quote-signature-line {
-  width: 200px;
-  height: 2px;
-  background: #333;
-  margin: 0 auto 0.5rem;
-}
-
-.quote-signature-id {
-  font-size: 0.85rem;
-  color: #666;
-}
-
 /* Footer Wave */
 .quote-footer-wave {
   background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
   padding: 1.5rem 2.5rem;
   position: relative;
   overflow: hidden;
+  margin-top: 6rem; /* Aún más espacio antes del footer para la firma */
 }
 
 .quote-footer-wave::before {
@@ -836,6 +926,66 @@ textarea.form-input {
     justify-content: space-between !important;
   }
 
+  /* Estilos específicos para generación de PDF - mantener formato original */
+  .quote-document.generating-pdf {
+    overflow: visible !important;
+    transform: none !important;
+    transform-origin: top left !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    /* Mantener el formato original sin comprimir, permitir múltiples páginas */
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: auto !important;
+    justify-content: flex-start !important;
+  }
+  
+  /* Asegurar que todos los elementos hijos sean visibles y mantengan su formato */
+  .quote-document.generating-pdf * {
+    visibility: visible !important;
+    opacity: 1 !important;
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  /* Asegurar que los colores de fondo se mantengan */
+  .quote-document.generating-pdf .quote-header-wave,
+  .quote-document.generating-pdf .quote-footer-wave,
+  .quote-document.generating-pdf .quote-summary-total,
+  .quote-document.generating-pdf .quote-table thead {
+    background: #1e3a5f !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  /* Mantener estilos originales durante la generación */
+  .quote-document.generating-pdf .quote-header-wave,
+  .quote-document.generating-pdf .quote-client-info,
+  .quote-document.generating-pdf .quote-project-info,
+  .quote-document.generating-pdf .quote-table-container {
+    page-break-inside: avoid !important;
+  }
+
+  /* Forzar salto de página antes de Costos Adicionales en PDF */
+  .quote-document.generating-pdf .quote-additional-costs-section {
+    page-break-before: always !important;
+    page-break-inside: avoid !important;
+  }
+
+  .quote-document.generating-pdf .quote-summary,
+  .quote-document.generating-pdf .quote-footer-section,
+  .quote-document.generating-pdf .quote-footer-wave {
+    page-break-inside: avoid !important;
+  }
+
   /* Header optimizado - más compacto */
   .quote-header-wave {
     background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%) !important;
@@ -844,6 +994,10 @@ textarea.form-input {
     color-adjust: exact !important;
     padding: 0.75rem 1.5rem !important;
     margin-bottom: 0 !important;
+  }
+
+  .quote-document.generating-pdf .quote-header-wave {
+    padding: 0.5rem 1rem !important;
   }
 
   .quote-header-wave::after {
@@ -882,14 +1036,28 @@ textarea.form-input {
     background: white !important;
   }
 
+  .quote-document.generating-pdf .quote-client-info {
+    padding: 0.5rem 1rem 0.25rem !important;
+  }
+
   .quote-client-name {
     font-size: 1rem !important;
     margin-bottom: 0.25rem !important;
   }
 
+  .quote-document.generating-pdf .quote-client-name {
+    font-size: 0.85rem !important;
+    margin-bottom: 0.15rem !important;
+  }
+
   .quote-client-detail {
     font-size: 0.75rem !important;
     margin-top: 0.1rem !important;
+  }
+
+  .quote-document.generating-pdf .quote-client-detail {
+    font-size: 0.65rem !important;
+    margin-top: 0.05rem !important;
   }
 
   /* Información del proyecto - más compacta */
@@ -902,10 +1070,20 @@ textarea.form-input {
     border-bottom: 1px solid #e0e0e0 !important;
   }
 
+  .quote-document.generating-pdf .quote-project-info {
+    padding: 0.35rem 1rem !important;
+  }
+
   .quote-project-detail {
     margin-bottom: 0.25rem !important;
     font-size: 0.75rem !important;
     line-height: 1.3 !important;
+  }
+
+  .quote-document.generating-pdf .quote-project-detail {
+    margin-bottom: 0.15rem !important;
+    font-size: 0.65rem !important;
+    line-height: 1.2 !important;
   }
 
   .quote-project-detail:last-child {
@@ -919,14 +1097,28 @@ textarea.form-input {
     margin-bottom: 0 !important;
   }
 
+  .quote-document.generating-pdf .quote-table-title {
+    padding: 0.3rem 1rem 0.15rem !important;
+    font-size: 0.7rem !important;
+  }
+
   /* Tablas optimizadas - más compactas */
   .quote-table-container {
     padding: 0 1.5rem !important;
     margin-bottom: 0.5rem !important;
   }
 
+  .quote-document.generating-pdf .quote-table-container {
+    padding: 0 1rem !important;
+    margin-bottom: 0.3rem !important;
+  }
+
   .quote-table {
     font-size: 0.7rem !important;
+  }
+
+  .quote-document.generating-pdf .quote-table {
+    font-size: 0.6rem !important;
   }
 
   .quote-table thead {
@@ -947,10 +1139,40 @@ textarea.form-input {
     print-color-adjust: exact !important;
   }
 
+  .quote-document.generating-pdf .quote-table th {
+    padding: 0.25rem 0.35rem !important;
+    font-size: 0.6rem !important;
+  }
+
+  /* Asegurar que el header de TOTAL tenga el mismo padding-right que las celdas */
+  .quote-table th:last-child {
+    padding-right: 1.5rem !important; /* Mismo padding que las celdas para alineación vertical */
+  }
+
+  .quote-document.generating-pdf .quote-table th:last-child {
+    padding-right: 1rem !important; /* Mismo padding que las celdas en PDF */
+  }
+
   .quote-table td {
     padding: 0.4rem 0.5rem !important;
     font-size: 0.7rem !important;
     color: #333 !important;
+  }
+
+  .quote-document.generating-pdf .quote-table td {
+    padding: 0.25rem 0.35rem !important;
+    font-size: 0.6rem !important;
+  }
+
+  /* Asegurar que la columna TOTAL mantenga su padding en impresión */
+  .quote-table th:last-child,
+  .quote-table td:last-child {
+    padding-right: 1.5rem !important; /* Mismo padding para header y celdas - alineación vertical */
+  }
+
+  .quote-document.generating-pdf .quote-table th:last-child,
+  .quote-document.generating-pdf .quote-table td:last-child {
+    padding-right: 1rem !important; /* Padding proporcional en PDF - mismo para header y celdas */
   }
 
   .quote-table tbody tr {
@@ -965,15 +1187,42 @@ textarea.form-input {
 
   /* Resumen - más compacto */
   .quote-summary {
-    padding: 0 1.5rem !important;
+    padding: 0 1.5rem !important; /* Mismo padding que quote-table-container en impresión */
     margin-bottom: 0.5rem !important;
     gap: 0.25rem !important;
+  }
+
+  .quote-document.generating-pdf .quote-summary {
+    padding: 0 1rem !important; /* Mismo padding que quote-table-container en PDF */
+    margin-bottom: 0.3rem !important;
+    gap: 0.15rem !important;
   }
 
   .quote-summary-row {
     font-size: 0.75rem !important;
     padding: 0.25rem 0 !important;
-    width: 250px !important;
+    width: 250px !important; /* Volver al ancho original */
+  }
+
+  .quote-document.generating-pdf .quote-summary-row {
+    font-size: 0.65rem !important;
+    padding: 0.15rem 0 !important;
+    width: 200px !important; /* Volver al ancho original */
+  }
+
+  /* Alinear el valor del subtotal con el título TOTAL de la columna */
+  .quote-summary-row span:last-child {
+    text-align: right !important;
+    padding-right: 1.5rem !important; /* Mismo padding que el header "TOTAL" para alineación vertical */
+    min-width: 80px !important; /* Ancho mínimo para mantener alineación */
+    display: inline-block !important; /* Para que el padding funcione correctamente */
+  }
+
+  .quote-document.generating-pdf .quote-summary-row span:last-child {
+    text-align: right !important;
+    padding-right: 1rem !important; /* Mismo padding que el header "TOTAL" en PDF */
+    min-width: 70px !important; /* Ancho mínimo en PDF */
+    display: inline-block !important;
   }
 
   .quote-summary-total {
@@ -985,13 +1234,26 @@ textarea.form-input {
     font-size: 0.9rem !important;
     margin-top: 0.25rem !important;
     width: 250px !important;
+    max-width: 250px !important; /* Asegurar ancho fijo */
+  }
+
+  .quote-document.generating-pdf .quote-summary-total {
+    padding: 0.35rem !important;
+    font-size: 0.75rem !important;
+    margin-top: 0.15rem !important;
+    width: 200px !important;
+    max-width: 200px !important; /* Asegurar ancho fijo en PDF */
   }
 
   /* Footer section - más compacto */
   .quote-footer-section {
     padding: 0 1.5rem 0.5rem !important;
     gap: 0.75rem !important;
-    margin-top: auto !important;
+  }
+
+  .quote-document.generating-pdf .quote-footer-section {
+    padding: 0 1rem 0.3rem !important;
+    gap: 0.5rem !important;
   }
 
   .quote-notes {
@@ -999,28 +1261,69 @@ textarea.form-input {
     line-height: 1.4 !important;
   }
 
+  .quote-document.generating-pdf .quote-notes {
+    font-size: 0.6rem !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Sección de firma - más compacto pero con espacio para firmar */
+  .quote-signature-section {
+    padding: 8rem 1.5rem 2rem !important; /* El doble de espacio en impresión */
+    min-height: 200px !important; /* Mayor espacio mínimo para la firma */
+    justify-content: flex-end !important; /* Alineado a la derecha como el total */
+    align-items: flex-start !important;
+  }
+
+  .quote-document.generating-pdf .quote-signature-section {
+    padding: 6rem 1rem 1.5rem !important; /* El doble de espacio en PDF */
+    min-height: 180px !important;
+    justify-content: flex-end !important; /* Alineado a la derecha como el total */
+    align-items: flex-start !important;
+  }
+
   .quote-signature {
-    min-width: 150px !important;
+    width: 250px !important; /* Mismo ancho que el total en impresión */
+    max-width: 250px !important;
+    min-width: 250px !important;
+    text-align: center !important;
+  }
+
+  .quote-document.generating-pdf .quote-signature {
+    width: 200px !important; /* Mismo ancho que el total en PDF */
+    max-width: 200px !important;
+    min-width: 200px !important;
+    text-align: center !important;
   }
 
   .quote-signature-line {
-    width: 150px !important;
+    width: 200px !important;
     height: 1px !important;
+    margin: 0 auto 0.5rem !important; /* Centrada dentro del contenedor */
+  }
+
+  .quote-document.generating-pdf .quote-signature-line {
+    width: 160px !important; /* Proporcional al ancho del contenedor */
+    margin: 0 auto 0.5rem !important; /* Centrada dentro del contenedor */
   }
 
   .quote-signature-id {
     font-size: 0.65rem !important;
   }
 
-  /* Footer wave - más compacto y al final */
+  /* Footer wave - más compacto y al final, con más espacio para la firma */
   .quote-footer-wave {
     background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%) !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
     padding: 0.75rem 1.5rem !important;
-    margin-top: auto !important;
+    margin-top: 5rem !important; /* Aún más espacio adicional para la firma */
     margin-bottom: 0 !important;
+  }
+
+  .quote-document.generating-pdf .quote-footer-wave {
+    padding: 0.5rem 1rem !important;
+    margin-top: 3rem !important; /* Aún más espacio en PDF también */
   }
 
   .quote-footer-wave::before {
@@ -1057,7 +1360,22 @@ textarea.form-input {
     flex-shrink: 0 !important;
   }
 
+  /* Forzar salto de página antes de Costos Adicionales y todo lo que sigue */
+  /* Esto asegura que cuando hay más de una página, esta sección vaya a la segunda página */
+  .quote-additional-costs-section {
+    page-break-before: always !important;
+    page-break-inside: avoid !important;
+    flex-shrink: 0 !important;
+    break-before: page !important;
+  }
+
   .quote-summary {
+    page-break-before: avoid !important;
+    page-break-inside: avoid !important;
+    flex-shrink: 0 !important;
+  }
+
+  .quote-signature-section {
     page-break-before: avoid !important;
     page-break-inside: avoid !important;
     flex-shrink: 0 !important;

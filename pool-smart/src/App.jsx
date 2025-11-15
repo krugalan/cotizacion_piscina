@@ -1,91 +1,63 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
+import html2pdf from 'html2pdf.js'
 
 function App() {
+  // DATOS HARDCODEADOS PARA TESTING
   const [formData, setFormData] = useState({
     // Información del cliente
-    clientName: '',
-    clientEmail: '',
-    clientPhone: '',
+    clientName: 'Juan Pérez',
+    clientEmail: 'juan.perez@email.com',
+    clientPhone: '+54 11 1234-5678',
     // Dimensiones
-    length: '',
-    width: '',
-    depth: '',
+    length: '4.97',
+    width: '2',
+    depth: '2',
     poolType: 'rectangular',
     // Tipo de trabajo
-    workType: 'construction', // construction, repair, maintenance, renovation
+    workType: 'repair', // construction, repair, maintenance, renovation
     // Materiales
     materials: {
       ceramics: true,
       thermalFloor: true,
-      pump: false,
-      filter: false,
-      lighting: false,
-      heating: false,
-      cover: false,
-      ladder: false,
+      pump: true,
+      filter: true,
+      lighting: true,
+      heating: true,
+      cover: true,
+      ladder: true,
       tiles: 'standard' // standard, premium, luxury
     },
     // Reparaciones específicas
     repairs: {
-      leaks: false,
-      cracks: false,
-      coating: false,
-      plumbing: false,
-      electrical: false,
-      cleaning: false
+      leaks: true,
+      cracks: true,
+      coating: true,
+      plumbing: true,
+      electrical: true,
+      cleaning: true
     },
     // Mano de obra
-    laborHours: '',
+    laborHours: '24',
     laborRate: 50, // USD por hora
     // Otros factores
     accessDifficulty: 'normal', // easy, normal, difficult
     permits: false,
     excavation: true,
-    additionalNotes: ''
+    additionalNotes: 'Reparación completa de piscina con renovación de materiales y sistemas.'
   })
 
   const [showModal, setShowModal] = useState(false)
   const [quoteData, setQuoteData] = useState(null)
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target
-    
-    if (name.startsWith('materials.')) {
-      const materialKey = name.split('.')[1]
-      setFormData(prev => ({
-        ...prev,
-        materials: {
-          ...prev.materials,
-          [materialKey]: type === 'checkbox' ? checked : value
-        }
-      }))
-    } else if (name.startsWith('repairs.')) {
-      const repairKey = name.split('.')[1]
-      setFormData(prev => ({
-        ...prev,
-        repairs: {
-          ...prev.repairs,
-          [repairKey]: checked
-        }
-      }))
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      }))
-    }
-  }
-
-  const calculateQuote = (e) => {
-    e.preventDefault()
-    
+  // Función para calcular cotización (sin evento)
+  const calculateQuoteData = () => {
     const length = parseFloat(formData.length) || 0
     const width = parseFloat(formData.width) || 0
     const depth = parseFloat(formData.depth) || 0
 
     if (length <= 0 || width <= 0 || depth <= 0) {
-      alert('Por favor, ingrese valores válidos mayores a cero')
+      console.warn('Valores inválidos en el formulario')
       return
     }
 
@@ -365,6 +337,45 @@ function App() {
     setShowModal(true)
   }
 
+  // Calcular automáticamente al cargar la página
+  useEffect(() => {
+    calculateQuoteData()
+  }, []) // Solo se ejecuta una vez al montar
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target
+    
+    if (name.startsWith('materials.')) {
+      const materialKey = name.split('.')[1]
+      setFormData(prev => ({
+        ...prev,
+        materials: {
+          ...prev.materials,
+          [materialKey]: type === 'checkbox' ? checked : value
+        }
+      }))
+    } else if (name.startsWith('repairs.')) {
+      const repairKey = name.split('.')[1]
+      setFormData(prev => ({
+        ...prev,
+        repairs: {
+          ...prev.repairs,
+          [repairKey]: checked
+        }
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }))
+    }
+  }
+
+  const calculateQuote = (e) => {
+    e.preventDefault()
+    calculateQuoteData()
+  }
+
   const resetForm = () => {
     setFormData({
       clientName: '',
@@ -557,14 +568,519 @@ function App() {
     URL.revokeObjectURL(url)
   }
 
-  // Función para enviar datos a webhook de n8n (opcional)
-  const sendToN8N = async (quoteData, webhookUrl) => {
-    if (!webhookUrl) {
-      alert('Por favor, configure la URL del webhook de n8n')
-      return
+  // Función para generar PDF y convertirlo a base64
+  const generatePDFBase64 = async () => {
+    const element = document.querySelector('.quote-document')
+    if (!element) {
+      throw new Error('No se encontró el documento del presupuesto')
     }
 
+    // Ocultar modal temporalmente para captura limpia
+    const modal = document.querySelector('.modal-overlay')
+    const originalModalDisplay = modal ? modal.style.display : null
+    if (modal) modal.style.display = 'none'
+
+    // Clonar el elemento
+    const clone = element.cloneNode(true)
+    clone.id = 'pdf-clone-' + Date.now()
+    
+    // Remover elementos innecesarios del clon
+    const closeBtn = clone.querySelector('.modal-close')
+    const actions = clone.querySelector('.modal-actions')
+    if (closeBtn) closeBtn.remove()
+    if (actions) actions.remove()
+    
+    // Crear contenedor para el clon con estilos forzados
+    const container = document.createElement('div')
+    container.style.cssText = `
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 794px !important;
+      background: white !important;
+      z-index: 99999 !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    `
+    
+    // Calcular altura aproximada del contenido antes de "COSTOS ADICIONALES"
+    // para determinar si necesitamos salto de página
+    const additionalCostsSection = clone.querySelector('.quote-additional-costs-section')
+    let needsPageBreak = false
+    
+    if (additionalCostsSection) {
+      // Crear un clon temporal para medir altura
+      const tempClone = element.cloneNode(true)
+      tempClone.style.position = 'absolute'
+      tempClone.style.visibility = 'hidden'
+      tempClone.style.width = '794px'
+      document.body.appendChild(tempClone)
+      
+      // Encontrar todos los elementos antes de "COSTOS ADICIONALES"
+      const allSections = Array.from(tempClone.children)
+      const additionalIndex = allSections.findIndex(el => 
+        el.classList.contains('quote-additional-costs-section')
+      )
+      
+      if (additionalIndex > 0) {
+        // Calcular altura acumulada de todas las secciones antes de "COSTOS ADICIONALES"
+        let totalHeight = 0
+        for (let i = 0; i < additionalIndex; i++) {
+          const section = allSections[i]
+          totalHeight += section.offsetHeight || section.scrollHeight || 0
+        }
+        
+        // Altura aproximada de una página A4 en píxeles (297mm - márgenes)
+        // Con márgenes de 10mm arriba y abajo, altura útil ≈ 1123px (a 96dpi)
+        const pageHeight = 1123 // Aproximadamente 277mm en píxeles
+        
+        // Si el contenido antes de "COSTOS ADICIONALES" es mayor a una página, forzar salto
+        needsPageBreak = totalHeight > pageHeight
+        
+        console.log('📏 Altura antes de COSTOS ADICIONALES:', totalHeight, 'px')
+        console.log('📄 Altura de página:', pageHeight, 'px')
+        console.log('🔄 Necesita salto de página:', needsPageBreak)
+      }
+      
+      document.body.removeChild(tempClone)
+    }
+    
+    // Inyectar estilos EXACTOS del original
+    const style = document.createElement('style')
+    style.textContent = `
+    @page {
+    size: A4;
+    margin: 0.5cm;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    text-indent: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  #${clone.id} {
+    font-family: "Segoe UI", sans-serif;
+    width: 794px;
+    background: white !important;
+    color: #333;
+    font-size: 11pt;
+    line-height: 1.4;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 1cm);
+  }
+  
+  /* Header Wave - compacto */
+  #${clone.id} .quote-header-wave {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%) !important;
+    padding: 0.75rem 1.5rem !important;
+    color: white !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0;
+  }
+  
+  #${clone.id} .quote-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  
+  #${clone.id} .quote-logo-section {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+  
+  #${clone.id} .quote-logo {
+    font-size: 1.5rem !important;
+    width: 35px !important;
+    height: 35px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+  }
+  
+  #${clone.id} .quote-company {
+    color: white !important;
+  }
+  
+  #${clone.id} .quote-company-label {
+    color: white !important;
+    font-family: "Segoe UI Semibold", sans-serif;
+    font-size: 0.7rem !important;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  
+  #${clone.id} .quote-company-name {
+    color: white !important;
+    font-family: "Segoe UI Semibold", sans-serif;
+    font-size: 0.95rem !important;
+    font-weight: 600;
+  }
+  
+  #${clone.id} .quote-date {
+    color: white !important;
+    font-family: "Segoe UI Semibold", sans-serif;
+    font-size: 0.8rem !important;
+    font-weight: 500;
+  }
+  
+  /* Client Info - compacto */
+  #${clone.id} .quote-client-info {
+    padding: 0.75rem 1.5rem 0.5rem !important;
+    background: white !important;
+    flex-shrink: 0;
+  }
+  
+  #${clone.id} .quote-client-name {
+    color: #333;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 1rem !important;
+    font-weight: bold;
+    margin-bottom: 0.25rem !important;
+  }
+  
+  #${clone.id} .quote-client-detail {
+    color: #666;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 0.75rem !important;
+    line-height: 1.3;
+    margin-top: 0.1rem !important;
+  }
+  
+  /* Project Info - compacto */
+  #${clone.id} .quote-project-info {
+    padding: 0.5rem 1.5rem !important;
+    background: #f5f7fa !important;
+    border-top: 1px solid #e0e0e0 !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+    flex-shrink: 0;
+    page-break-inside: avoid;
+  }
+  
+  #${clone.id} .quote-project-detail {
+    color: #333;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 0.75rem !important;
+    line-height: 1.3 !important;
+    margin-bottom: 0.25rem !important;
+  }
+  
+  #${clone.id} .quote-project-detail:last-child {
+    margin-bottom: 0 !important;
+  }
+  
+  #${clone.id} .quote-project-detail strong {
+    color: #333;
+    font-weight: bold;
+  }
+  
+  /* Table Title - compacto */
+  #${clone.id} .quote-table-title {
+    color: #1D3A5E;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 0.85rem !important;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 0.5rem 1.5rem 0.25rem !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0;
+  }
+  
+  /* Table Container - compacto */
+  #${clone.id} .quote-table-container {
+    padding: 0 1.5rem !important;
+    margin-bottom: 0.5rem !important;
+    flex-shrink: 0;
+    page-break-inside: avoid;
+  }
+  
+  /* Table */
+  #${clone.id} .quote-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.7rem !important;
+  }
+  
+  #${clone.id} .quote-table thead {
+    background: #1e3a5f !important;
+    color: white !important;
+  }
+  
+  #${clone.id} .quote-table th {
+    background: #1e3a5f !important;
+    color: white !important;
+    font-family: "Segoe UI Semibold", sans-serif;
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 0.4rem 0.5rem !important;
+    text-align: left;
+  }
+  
+  #${clone.id} .quote-table th:nth-child(2),
+  #${clone.id} .quote-table th:nth-child(4),
+  #${clone.id} .quote-table th:nth-child(5) {
+    text-align: right;
+  }
+  
+  #${clone.id} .quote-table tbody tr {
+    border-bottom: 1px solid #e0e0e0 !important;
+  }
+  
+  #${clone.id} .quote-table tbody tr:nth-child(even) {
+    background: #f9f9f9 !important;
+  }
+  
+  #${clone.id} .quote-table td {
+    color: #333 !important;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 0.7rem !important;
+    padding: 0.4rem 0.5rem !important;
+  }
+  
+  #${clone.id} .quote-table td:first-child {
+    font-weight: normal;
+  }
+  
+  #${clone.id} .quote-table td:nth-child(2),
+  #${clone.id} .quote-table td:nth-child(4),
+  #${clone.id} .quote-table td:nth-child(5) {
+    text-align: right;
+  }
+  
+  #${clone.id} .quote-table td:last-child {
+    color: #333;
+    font-family: "Segoe UI Semibold", sans-serif;
+    font-weight: 600;
+  }
+  
+  /* Summary - compacto */
+  #${clone.id} .quote-summary {
+    padding: 0 1.5rem !important;
+    margin-bottom: 0.5rem !important;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem !important;
+    flex-shrink: 0;
+    page-break-inside: avoid;
+  }
+  
+  #${clone.id} .quote-summary-row {
+    display: flex;
+    justify-content: space-between;
+    width: 250px !important;
+    padding: 0.25rem 0 !important;
+    color: #333;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 0.75rem !important;
+  }
+  
+  #${clone.id} .quote-summary-row span:first-child {
+    font-weight: bold;
+  }
+  
+  #${clone.id} .quote-summary-row span:last-child {
+    text-align: right;
+    font-weight: 600;
+  }
+  
+  #${clone.id} .quote-summary-total {
+    display: flex;
+    justify-content: space-between;
+    width: 250px !important;
+    padding: 0.5rem !important;
+    background: #1e3a5f !important;
+    color: white !important;
+    font-family: "Segoe UI Semibold", sans-serif;
+    font-size: 0.9rem !important;
+    font-weight: bold;
+    border-radius: 3px;
+    margin-top: 0.25rem !important;
+  }
+  
+  /* Signature Section - compacto */
+  #${clone.id} .quote-signature-section {
+    padding: 3rem 1.5rem 1rem;
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    page-break-inside: avoid;
+  }
+  
+  #${clone.id} .quote-signature {
+    text-align: center;
+    width: 250px;
+    min-width: 150px !important;
+  }
+  
+  #${clone.id} .quote-signature-line {
+    width: 150px !important;
+    height: 1px !important;
+    background: #333;
+    margin: 0 auto 0.25rem;
+  }
+  
+  #${clone.id} .quote-signature-id {
+    color: #666;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 0.65rem !important;
+  }
+  
+  /* Footer Section - compacto */
+  #${clone.id} .quote-footer-section {
+    padding: 0 1.5rem 0.5rem !important;
+    gap: 0.75rem !important;
+    flex-shrink: 0;
+    page-break-inside: avoid;
+  }
+  
+  #${clone.id} .quote-notes {
+    color: #666;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 0.7rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  #${clone.id} .quote-notes strong {
+    color: #333;
+    font-weight: bold;
+  }
+  
+  /* Footer Wave - compacto */
+  #${clone.id} .quote-footer-wave {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%) !important;
+    padding: 0.75rem 1.5rem !important;
+    color: white !important;
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0;
+    page-break-before: avoid;
+  }
+  
+  #${clone.id} .quote-footer-content {
+    display: flex;
+    justify-content: center;
+    gap: 1rem !important;
+    flex-wrap: wrap;
+    color: white !important;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 0.7rem !important;
+  }
+  
+  #${clone.id} .quote-footer-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: white !important;
+  }
+  
+  /* CRÍTICO: Forzar salto de página en COSTOS ADICIONALES */
+  #${clone.id} .quote-additional-costs-section {
+    page-break-before: always !important;
+    break-before: page !important;
+    padding-top: 0.5rem;
+  }
+`
+
+    clone.appendChild(style)
+    container.appendChild(clone)
+    document.body.appendChild(container)
+    
+    // Esperar renderizado
+    await new Promise(resolve => setTimeout(resolve, 500))
+    clone.offsetHeight
+    
+    const options = {
+      margin: [10, 10, 10, 10],
+      filename: 'cotizacion.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 794,
+        width: 794,
+        scrollX: 0,
+        scrollY: 0
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait',
+        compress: true
+      },
+      pagebreak: {
+        mode: ['css', 'legacy'],
+        avoid: ['.quote-table-container', '.quote-summary', '.quote-header-wave', '.quote-footer-wave']
+      }
+    }
+
+    try {
+      console.log('📄 Generando PDF con estilos exactos del original...')
+      console.log('📐 Dimensiones:', clone.offsetWidth, 'x', clone.offsetHeight)
+      if (needsPageBreak) {
+        console.log('📑 Se aplicará salto de página antes de COSTOS ADICIONALES')
+      }
+      
+      const pdfBlob = await html2pdf()
+        .set(options)
+        .from(clone)
+        .toPdf()
+        .output('blob')
+      
+      console.log('✅ Blob generado:', pdfBlob.size, 'bytes')
+      
+      if (pdfBlob.size < 5000) {
+        throw new Error(`PDF muy pequeño: ${pdfBlob.size} bytes - probablemente vacío`)
+      }
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const base64 = reader.result.split(',')[1]
+          console.log('✅ Base64:', base64.length, 'chars')
+          console.log('🔍 Inicio:', base64.substring(0, 50))
+          resolve(base64)
+        }
+        reader.onerror = () => reject(new Error('Error FileReader'))
+        reader.readAsDataURL(pdfBlob)
+      })
+    } catch (error) {
+      console.error('❌ Error al generar PDF:', error)
+      throw error
+    } finally {
+      // Limpiar
+      container.remove()
+      if (modal && originalModalDisplay !== null) {
+        modal.style.display = originalModalDisplay
+      }
+      console.log('🧹 Limpiado')
+    }
+  }
+
+  // Función para enviar datos a webhook de n8n con PDF en base64
+  const sendToN8N = async (quoteData, pdfBase64 = null) => {
+    const webhookUrl = 'https://devn8n.zetti.xyz/webhook-test/cotizacion'
     const n8nData = prepareN8NData(quoteData)
+    
+    // Agregar el PDF en base64 si está disponible
+    if (pdfBase64) {
+      n8nData.presupuesto = pdfBase64
+      n8nData.pdfFilename = `presupuesto_${quoteData.formData?.clientName?.replace(/\s+/g, '_') || 'cliente'}_${new Date().toISOString().split('T')[0]}.pdf`
+    }
     
     try {
       const response = await fetch(webhookUrl, {
@@ -576,13 +1092,15 @@ function App() {
       })
 
       if (response.ok) {
-        alert('Datos enviados exitosamente a n8n')
+        alert('✅ Presupuesto enviado exitosamente a n8n')
+        return true
       } else {
-        alert('Error al enviar datos a n8n')
+        const errorText = await response.text().catch(() => 'Error desconocido')
+        throw new Error(`Error del servidor: ${response.status} - ${errorText.substring(0, 200)}`)
       }
     } catch (error) {
       console.error('Error al enviar a n8n:', error)
-      alert('Error al enviar datos a n8n: ' + error.message)
+      throw error
     }
   }
 
@@ -983,17 +1501,29 @@ function App() {
           quoteData={quoteData} 
           onClose={closeModal}
           formatCurrency={formatCurrency}
-          onDownloadJSON={() => downloadQuoteAsJSON(quoteData)}
-          onSendToN8N={(webhookUrl) => sendToN8N(quoteData, webhookUrl)}
+          onEnviar={async () => {
+            try {
+              // Generar PDF y convertirlo a base64
+              console.log('🔄 Generando PDF...')
+              const pdfBase64 = await generatePDFBase64()
+              console.log('✅ PDF generado, longitud:', pdfBase64.length)
+              console.log('🔍 Primeros 100 caracteres:', pdfBase64.substring(0, 100))
+              
+              // Enviar datos con PDF a n8n
+              console.log('📤 Enviando a n8n...')
+              await sendToN8N(quoteData, pdfBase64)
+            } catch (error) {
+              alert('Error al generar o enviar el presupuesto: ' + error.message)
+            }
+          }}
         />
       )}
     </div>
   )
 }
 
-function QuoteModal({ quoteData, onClose, formatCurrency, onDownloadJSON, onSendToN8N }) {
-  const [webhookUrl, setWebhookUrl] = useState('')
-  const [showWebhookInput, setShowWebhookInput] = useState(false)
+function QuoteModal({ quoteData, onClose, formatCurrency, onEnviar }) {
+  const [isSending, setIsSending] = useState(false)
 
   const formData = quoteData.formData || {}
   const poolTypeNames = {
@@ -1002,11 +1532,25 @@ function QuoteModal({ quoteData, onClose, formatCurrency, onDownloadJSON, onSend
     oval: 'Oval'
   }
 
-  const handleSendToN8N = () => {
-    if (webhookUrl.trim()) {
-      onSendToN8N(webhookUrl.trim())
-    } else {
-      setShowWebhookInput(true)
+  const handleEnviar = async () => {
+    // Mostrar confirmación
+    const confirmar = window.confirm(
+      '¿Está seguro de enviar el presupuesto?\n\n' +
+      'Se generará el PDF y se enviará toda la información al sistema.'
+    )
+
+    if (!confirmar) {
+      return
+    }
+
+    setIsSending(true)
+    try {
+      console.log('🔄 Generando PDF...')
+      await onEnviar()
+    } catch (error) {
+      console.error('Error en handleEnviar:', error)
+    } finally {
+      setIsSending(false)
     }
   }
 
@@ -1123,7 +1667,7 @@ function QuoteModal({ quoteData, onClose, formatCurrency, onDownloadJSON, onSend
 
           {/* Tabla de costos adicionales */}
           {quoteData.additionalCosts && quoteData.additionalCosts.length > 0 && (
-            <>
+            <div className="quote-additional-costs-section">
               <h3 className="quote-table-title">Costos Adicionales</h3>
               <div className="quote-table-container">
                 <table className="quote-table">
@@ -1147,7 +1691,7 @@ function QuoteModal({ quoteData, onClose, formatCurrency, onDownloadJSON, onSend
                   </tbody>
                 </table>
               </div>
-            </>
+            </div>
           )}
 
           {/* Resumen de costos */}
@@ -1168,7 +1712,15 @@ function QuoteModal({ quoteData, onClose, formatCurrency, onDownloadJSON, onSend
             </div>
           </div>
 
-          {/* Nota y firma */}
+          {/* Sección de firma - debajo del total */}
+          <div className="quote-signature-section">
+            <div className="quote-signature">
+              <div className="quote-signature-line"></div>
+              <div className="quote-signature-id">C.C 0000000000</div>
+            </div>
+          </div>
+
+          {/* Notas */}
           <div className="quote-footer-section">
             <div className="quote-notes">
               <strong>Nota:</strong> La cotización es válida por 7 días. La fecha de ejecución del servicio se coordinará según disponibilidad.
@@ -1177,10 +1729,6 @@ function QuoteModal({ quoteData, onClose, formatCurrency, onDownloadJSON, onSend
                   <strong>Notas adicionales:</strong> {formData.additionalNotes}
                 </div>
               )}
-            </div>
-            <div className="quote-signature">
-              <div className="quote-signature-line"></div>
-              <div className="quote-signature-id">C.C 0000000000</div>
             </div>
           </div>
 
@@ -1199,55 +1747,30 @@ function QuoteModal({ quoteData, onClose, formatCurrency, onDownloadJSON, onSend
         </div>
 
         <div className="modal-actions">
-          {!showWebhookInput ? (
-            <>
-              <button className="btn btn-primary" onClick={() => window.print()}>
-                Imprimir Presupuesto
-              </button>
-              <button className="btn btn-primary" onClick={onDownloadJSON} style={{ background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)' }}>
-                📥 Descargar JSON (n8n)
-              </button>
-              <button 
-                className="btn btn-secondary" 
-                onClick={() => setShowWebhookInput(true)}
-                style={{ background: '#007bff', color: 'white' }}
-              >
-                🔗 Enviar a n8n
-              </button>
-              <button className="btn btn-secondary" onClick={onClose}>
-                Cerrar
-              </button>
-            </>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
-              <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
-                <input
-                  type="text"
-                  placeholder="URL del webhook de n8n (ej: https://tu-n8n.com/webhook/...)"
-                  value={webhookUrl}
-                  onChange={(e) => setWebhookUrl(e.target.value)}
-                  className="form-input"
-                  style={{ flex: 1 }}
-                />
-                <button 
-                  className="btn btn-primary" 
-                  onClick={handleSendToN8N}
-                  style={{ background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)' }}
-                >
-                  Enviar
-                </button>
-                <button 
-                  className="btn btn-secondary" 
-                  onClick={() => {
-                    setShowWebhookInput(false)
-                    setWebhookUrl('')
-                  }}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          )}
+          <button 
+            className="btn btn-primary" 
+            onClick={handleEnviar}
+            disabled={isSending}
+            style={{ 
+              flex: 1,
+              opacity: isSending ? 0.6 : 1,
+              cursor: isSending ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {isSending ? 'Enviando...' : 'Enviar'}
+          </button>
+          <button 
+            className="btn btn-secondary" 
+            onClick={onClose}
+            disabled={isSending}
+            style={{ 
+              flex: 1,
+              opacity: isSending ? 0.6 : 1,
+              cursor: isSending ? 'not-allowed' : 'pointer'
+            }}
+          >
+            Editar
+          </button>
         </div>
       </div>
     </div>
