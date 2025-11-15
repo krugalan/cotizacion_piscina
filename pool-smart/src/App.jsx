@@ -603,21 +603,27 @@ function App() {
       opacity: 1 !important;
     `
     
-    // Calcular altura aproximada del contenido antes de "COSTOS ADICIONALES"
-    // para determinar si necesitamos salto de página
+    // Calcular si necesitamos salto de página antes de "COSTOS ADICIONALES"
+    // Primero aplicamos estilos básicos para poder medir correctamente
+    const tempStyle = document.createElement('style')
+    tempStyle.textContent = `
+      #${clone.id} {
+        width: 794px;
+        font-size: 14px;
+      }
+    `
+    clone.appendChild(tempStyle)
+    
+    // Esperar renderizado
+    await new Promise(resolve => setTimeout(resolve, 200))
+    clone.offsetHeight // Forzar reflow
+    
     const additionalCostsSection = clone.querySelector('.quote-additional-costs-section')
     let needsPageBreak = false
     
     if (additionalCostsSection) {
-      // Crear un clon temporal para medir altura
-      const tempClone = element.cloneNode(true)
-      tempClone.style.position = 'absolute'
-      tempClone.style.visibility = 'hidden'
-      tempClone.style.width = '794px'
-      document.body.appendChild(tempClone)
-      
       // Encontrar todos los elementos antes de "COSTOS ADICIONALES"
-      const allSections = Array.from(tempClone.children)
+      const allSections = Array.from(clone.children)
       const additionalIndex = allSections.findIndex(el => 
         el.classList.contains('quote-additional-costs-section')
       )
@@ -627,22 +633,32 @@ function App() {
         let totalHeight = 0
         for (let i = 0; i < additionalIndex; i++) {
           const section = allSections[i]
-          totalHeight += section.offsetHeight || section.scrollHeight || 0
+          // Obtener altura real del elemento renderizado
+          const rect = section.getBoundingClientRect()
+          const height = rect.height || section.offsetHeight || section.scrollHeight || 0
+          totalHeight += height
         }
         
-        // Altura aproximada de una página A4 en píxeles (297mm - márgenes)
-        // Con márgenes de 10mm arriba y abajo, altura útil ≈ 1123px (a 96dpi)
-        const pageHeight = 1123 // Aproximadamente 277mm en píxeles
+        // Altura útil de una página A4: 297mm - 20mm (márgenes) = 277mm
+        // A 96 DPI: 277mm ≈ 1046px
+        // Usamos un umbral más bajo (900px) para ser más conservador y detectar mejor
+        const pageHeight = 900 // Altura útil de una página A4 (más conservador)
         
         // Si el contenido antes de "COSTOS ADICIONALES" es mayor a una página, forzar salto
         needsPageBreak = totalHeight > pageHeight
         
         console.log('📏 Altura antes de COSTOS ADICIONALES:', totalHeight, 'px')
-        console.log('📄 Altura de página:', pageHeight, 'px')
+        console.log('📄 Altura de página (máximo):', pageHeight, 'px')
         console.log('🔄 Necesita salto de página:', needsPageBreak)
+        
+        // Si hay costos adicionales y el contenido es extenso, forzar salto
+        // También verificamos la altura total del documento
+        const totalDocHeight = clone.scrollHeight || clone.offsetHeight
+        if (totalDocHeight > 1200) { // Si el documento completo es mayor a ~1.2 páginas
+          needsPageBreak = true
+          console.log('📄 Documento completo muy extenso, forzando salto de página')
+        }
       }
-      
-      document.body.removeChild(tempClone)
     }
     
     // Inyectar estilos EXACTOS del original
@@ -986,21 +1002,95 @@ function App() {
     color: white !important;
   }
   
-  /* CRÍTICO: Forzar salto de página en COSTOS ADICIONALES */
+  /* CONDICIONAL: Salto de página antes de COSTOS ADICIONALES solo si hay 2+ páginas */
+  ${needsPageBreak ? `
   #${clone.id} .quote-additional-costs-section {
     page-break-before: always !important;
     break-before: page !important;
+    page-break-inside: avoid !important;
     padding-top: 0.5rem;
   }
+  
+  /* Asegurar que todo lo que sigue también vaya en la segunda página */
+  #${clone.id} .quote-additional-costs-section ~ .quote-summary,
+  #${clone.id} .quote-additional-costs-section ~ .quote-signature-section,
+  #${clone.id} .quote-additional-costs-section ~ .quote-footer-section,
+  #${clone.id} .quote-additional-costs-section ~ .quote-footer-wave {
+    page-break-before: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  
+  /* Asegurar que el resumen, firma y footer no se separen de COSTOS ADICIONALES */
+  #${clone.id} .quote-summary,
+  #${clone.id} .quote-signature-section,
+  #${clone.id} .quote-footer-section,
+  #${clone.id} .quote-footer-wave {
+    page-break-before: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  ` : `
+  #${clone.id} .quote-additional-costs-section {
+    page-break-inside: avoid !important;
+  }
+  `}
 `
 
     clone.appendChild(style)
     container.appendChild(clone)
     document.body.appendChild(container)
     
-    // Esperar renderizado
+    // Esperar renderizado completo con estilos aplicados
     await new Promise(resolve => setTimeout(resolve, 500))
-    clone.offsetHeight
+    clone.offsetHeight // Forzar reflow
+    
+    // Recalcular needsPageBreak después de aplicar estilos
+    if (additionalCostsSection) {
+      const allSections = Array.from(clone.children)
+      const additionalIndex = allSections.findIndex(el => 
+        el.classList.contains('quote-additional-costs-section')
+      )
+      
+      if (additionalIndex > 0) {
+        let totalHeight = 0
+        for (let i = 0; i < additionalIndex; i++) {
+          const section = allSections[i]
+          const rect = section.getBoundingClientRect()
+          const height = rect.height || section.offsetHeight || section.scrollHeight || 0
+          totalHeight += height
+        }
+        
+        const pageHeight = 900
+        const shouldBreak = totalHeight > pageHeight
+        
+        // Si antes no detectó pero ahora sí, actualizar
+        if (shouldBreak && !needsPageBreak) {
+          needsPageBreak = true
+          console.log('🔄 Recalculado: Necesita salto de página después de aplicar estilos')
+          
+          // Actualizar estilos dinámicamente
+          const additionalStyle = document.createElement('style')
+          additionalStyle.textContent = `
+            #${clone.id} .quote-additional-costs-section {
+              page-break-before: always !important;
+              break-before: page !important;
+              page-break-inside: avoid !important;
+              padding-top: 0.5rem;
+            }
+            #${clone.id} .quote-additional-costs-section ~ .quote-summary,
+            #${clone.id} .quote-additional-costs-section ~ .quote-signature-section,
+            #${clone.id} .quote-additional-costs-section ~ .quote-footer-section,
+            #${clone.id} .quote-additional-costs-section ~ .quote-footer-wave {
+              page-break-before: avoid !important;
+              page-break-inside: avoid !important;
+            }
+          `
+          clone.appendChild(additionalStyle)
+        }
+        
+        console.log('📏 Altura final antes de COSTOS ADICIONALES:', totalHeight, 'px')
+        console.log('🔄 Necesita salto de página (final):', needsPageBreak || shouldBreak)
+      }
+    }
     
     const options = {
       margin: [10, 10, 10, 10],
@@ -1024,7 +1114,8 @@ function App() {
       },
       pagebreak: {
         mode: ['css', 'legacy'],
-        avoid: ['.quote-table-container', '.quote-summary', '.quote-header-wave', '.quote-footer-wave']
+        avoid: ['.quote-table-container', '.quote-summary', '.quote-header-wave', '.quote-footer-wave'],
+        before: needsPageBreak ? ['.quote-additional-costs-section'] : []
       }
     }
 
@@ -1073,6 +1164,7 @@ function App() {
 
   // Función para enviar datos a webhook de n8n con PDF en base64
   const sendToN8N = async (quoteData, pdfBase64 = null) => {
+    // Usar webhook de test (funciona bien sin CORS)
     const webhookUrl = 'https://devn8n.zetti.xyz/webhook-test/cotizacion'
     const n8nData = prepareN8NData(quoteData)
     
@@ -1082,25 +1174,52 @@ function App() {
       n8nData.pdfFilename = `presupuesto_${quoteData.formData?.clientName?.replace(/\s+/g, '_') || 'cliente'}_${new Date().toISOString().split('T')[0]}.pdf`
     }
     
+    console.log('📤 Enviando datos a webhook:', webhookUrl)
+    console.log('📊 Tamaño de datos:', JSON.stringify(n8nData).length, 'caracteres')
+    console.log('📄 PDF incluido:', pdfBase64 ? `Sí (${pdfBase64.length} caracteres)` : 'No')
+    
     try {
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify(n8nData)
+        body: JSON.stringify(n8nData),
+        signal: AbortSignal.timeout(30000) // 30 segundos de timeout
       })
 
+      console.log('📥 Respuesta recibida:', response.status, response.statusText)
+
       if (response.ok) {
+        const responseData = await response.json().catch(() => ({}))
+        console.log('✅ Respuesta exitosa:', responseData)
         alert('✅ Presupuesto enviado exitosamente a n8n')
         return true
       } else {
         const errorText = await response.text().catch(() => 'Error desconocido')
+        console.error('❌ Error del servidor:', response.status, errorText)
         throw new Error(`Error del servidor: ${response.status} - ${errorText.substring(0, 200)}`)
       }
     } catch (error) {
-      console.error('Error al enviar a n8n:', error)
-      throw error
+      console.error('❌ Error completo al enviar a n8n:', error)
+      
+      // Proporcionar mensajes de error más descriptivos
+      let errorMessage = 'Error desconocido'
+      
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        errorMessage = 'El servidor no respondió a tiempo. Verifica que el webhook esté activo en n8n.'
+      } else if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+        errorMessage = 'No se pudo conectar al servidor.\n\n' +
+          'Verifica:\n' +
+          '1. Que el webhook esté activo en n8n\n' +
+          '2. Que no haya problemas de red/firewall\n' +
+          '3. Revisa la consola (F12) para más detalles'
+      } else {
+        errorMessage = error.message
+      }
+      
+      throw new Error(errorMessage)
     }
   }
 
