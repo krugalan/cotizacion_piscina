@@ -639,7 +639,7 @@ textarea.form-input {
 /* Anchos específicos para cada columna (tablas con 5 columnas) */
 .quote-table th:nth-child(1),
 .quote-table td:nth-child(1) {
-  width: 35%; /* Descripción - más ancho */
+  width: 32%; /* Descripción - ajustado para dar espacio a UND */
 }
 
 .quote-table th:nth-child(2),
@@ -650,7 +650,10 @@ textarea.form-input {
 
 .quote-table th:nth-child(3),
 .quote-table td:nth-child(3) {
-  width: 10%; /* Und */
+  width: 15%; /* Und - aumentado para evitar cortes */
+  white-space: nowrap; /* Evitar que el texto se divida en líneas */
+  min-width: 80px; /* Ancho mínimo para palabras como "servicio" */
+  overflow: visible; /* Permitir que el texto completo sea visible */
 }
 
 .quote-table th:nth-child(4),
@@ -661,7 +664,7 @@ textarea.form-input {
 
 .quote-table th:nth-child(5),
 .quote-table td:nth-child(5) {
-  width: 25%; /* Total - suficiente espacio */
+  width: 23%; /* Total - ajustado ligeramente */
   text-align: right;
   padding-right: 1.5rem; /* Padding extra a la derecha - mismo para header y celdas */
   white-space: nowrap; /* Evitar que el total se divida en líneas */
@@ -675,7 +678,7 @@ textarea.form-input {
 /* Tablas con 4 columnas (Costos Adicionales) */
 .quote-table-additional th:nth-child(1),
 .quote-table-additional td:nth-child(1) {
-  width: 45% !important; /* Descripción - más ancho cuando no hay Precio Unit. */
+  width: 42% !important; /* Descripción - ajustado para dar espacio a UND */
 }
 
 .quote-table-additional th:nth-child(2),
@@ -686,7 +689,10 @@ textarea.form-input {
 
 .quote-table-additional th:nth-child(3),
 .quote-table-additional td:nth-child(3) {
-  width: 15% !important; /* Und */
+  width: 18% !important; /* Und - aumentado para evitar cortes */
+  white-space: nowrap !important; /* Evitar que el texto se divida en líneas */
+  min-width: 90px !important; /* Ancho mínimo para palabras como "servicio" */
+  overflow: visible !important; /* Permitir que el texto completo sea visible */
 }
 
 .quote-table-additional th:nth-child(4),
