@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import html2pdf from 'html2pdf.js'
+import { uploadPDFToStorage, saveCotizacion } from './services/supabase'
 
 function App() {
   // DATOS HARDCODEADOS PARA TESTING
@@ -2283,8 +2284,8 @@ function App() {
     }
   }
 
-  // Función para generar PDF, previsualizarlo y convertirlo a base64
-  const generatePDFBase64 = async () => {
+  // Función para generar PDF, previsualizarlo y subirlo a Supabase Storage
+  const generateAndUploadPDF = async (quoteData) => {
     try {
       console.log('🔄 Generando PDF Blob...')
       // 1. Generar el PDF Blob
@@ -2294,37 +2295,104 @@ function App() {
       // 2. Mostrar previsualización y esperar confirmación del usuario
       const confirmedBlob = await previewPDF(pdfBlob)
       
-      console.log('🔄 Convirtiendo PDF a Base64...')
-      // 3. Convertir el Blob confirmado a base64
-      const base64 = await convertBlobToBase64(confirmedBlob)
+      // 3. Generar nombre del archivo
+      const clientName = quoteData.formData?.clientName || 'cliente'
+      const sanitizedClientName = clientName.replace(/[^a-zA-Z0-9-_]/g, '_')
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `presupuesto_${sanitizedClientName}_${dateStr}`
       
-      console.log('✅ PDF convertido a Base64 exitosamente')
-      return base64
+      console.log('☁️ Subiendo PDF a Supabase Storage...')
+      // 4. Subir PDF a Supabase Storage
+      const uploadResult = await uploadPDFToStorage(confirmedBlob, filename)
+      
+      if (uploadResult.error) {
+        throw new Error('Error al subir PDF a Supabase: ' + uploadResult.error.message)
+      }
+      
+      console.log('✅ PDF subido exitosamente a Supabase')
+      console.log('🔗 URL del PDF:', uploadResult.url)
+      
+      return {
+        pdfPath: uploadResult.path,
+        pdfUrl: uploadResult.url,
+        pdfFilename: `${filename}.pdf`
+      }
     } catch (error) {
-      console.error('❌ Error en generatePDFBase64:', error)
+      console.error('❌ Error en generateAndUploadPDF:', error)
       // Si el usuario canceló, no es un error crítico
       if (error.message && error.message.includes('cancelada')) {
         throw error // Re-lanzar para que el flujo sepa que fue cancelado
       }
-      throw new Error('Error al generar o convertir PDF: ' + error.message)
+      throw new Error('Error al generar o subir PDF: ' + error.message)
     }
   }
 
-  // Función para enviar datos a webhook de n8n con PDF en base64
-  const sendToN8N = async (quoteData, pdfBase64 = null) => {
-    // Usar webhook de test (funciona bien sin CORS)
-    const webhookUrl = 'https://devn8n.zetti.xyz/webhook-test/cotizacion'
+  // Función para guardar cotización en Supabase y preparar datos para n8n
+  const saveCotizacionToDatabase = async (quoteData, pdfInfo) => {
+    try {
+      const formData = quoteData.formData || {}
+      
+      // Preparar datos para guardar en la base de datos
+      const cotizacionData = {
+        cliente_nombre: formData.clientName || '',
+        cliente_email: formData.clientEmail || '',
+        cliente_telefono: formData.clientPhone || '',
+        tipo_piscina: formData.poolType || '',
+        largo: parseFloat(formData.length) || null,
+        ancho: parseFloat(formData.width) || null,
+        profundidad: parseFloat(formData.depth) || null,
+        volumen_m3: parseFloat(quoteData.volume) || 0,
+        area_ceramica_m2: parseFloat(quoteData.ceramicArea) || 0,
+        area_piso_termico_m2: parseFloat(quoteData.thermalFloorArea) || 0,
+        tipo_trabajo: formData.workType || '',
+        subtotal: parseFloat(quoteData.subtotal) || 0,
+        descuento: parseFloat(quoteData.discount) || 0,
+        total: parseFloat(quoteData.totalCost) || 0,
+        moneda: 'USD',
+        pdf_path: pdfInfo.pdfPath,
+        pdf_url: pdfInfo.pdfUrl,
+        pdf_filename: pdfInfo.pdfFilename,
+        notas: formData.additionalNotes || '',
+        estado: 'pendiente',
+        datos_completos: prepareN8NData(quoteData),
+        materiales: quoteData.materialCosts || [],
+        trabajos: quoteData.workCosts || [],
+        costos_adicionales: quoteData.additionalCosts || []
+      }
+      
+      console.log('💾 Guardando cotización en Supabase...')
+      const saveResult = await saveCotizacion(cotizacionData)
+      
+      if (saveResult.error) {
+        throw new Error('Error al guardar cotización: ' + saveResult.error.message)
+      }
+      
+      console.log('✅ Cotización guardada con ID:', saveResult.id)
+      return saveResult.id
+    } catch (error) {
+      console.error('❌ Error al guardar cotización:', error)
+      throw error
+    }
+  }
+
+  // Función para enviar datos a webhook de n8n con referencia al PDF en Supabase
+  const sendToN8N = async (quoteData, pdfInfo) => {
+    // Obtener URL del webhook desde variables de entorno o usar la por defecto
+    const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://devn8n.zetti.xyz/webhook-test/cotizacion'
     const n8nData = prepareN8NData(quoteData)
     
-    // Agregar el PDF en base64 si está disponible
-    if (pdfBase64) {
-      n8nData.presupuesto = pdfBase64
-      n8nData.pdfFilename = `presupuesto_${quoteData.formData?.clientName?.replace(/\s+/g, '_') || 'cliente'}_${new Date().toISOString().split('T')[0]}.pdf`
-    }
+    // Agregar información del PDF en Supabase (URL pública)
+    // n8n puede descargar el PDF desde esta URL
+    n8nData.pdfUrl = pdfInfo.pdfUrl
+    n8nData.pdfPath = pdfInfo.pdfPath
+    n8nData.pdfFilename = pdfInfo.pdfFilename
+    
+    // Nota: Ya no enviamos el PDF en base64, solo la URL
+    // n8n deberá descargar el PDF desde la URL proporcionada
     
     console.log('📤 Enviando datos a webhook:', webhookUrl)
     console.log('📊 Tamaño de datos:', JSON.stringify(n8nData).length, 'caracteres')
-    console.log('📄 PDF incluido:', pdfBase64 ? `Sí (${pdfBase64.length} caracteres)` : 'No')
+    console.log('📄 PDF URL:', pdfInfo.pdfUrl)
     
     try {
       const response = await fetch(webhookUrl, {
@@ -2342,7 +2410,7 @@ function App() {
       if (response.ok) {
         const responseData = await response.json().catch(() => ({}))
         console.log('✅ Respuesta exitosa:', responseData)
-        alert('✅ Presupuesto enviado exitosamente a n8n')
+        alert('✅ Presupuesto guardado y enviado exitosamente a n8n')
         return true
       } else {
         const errorText = await response.text().catch(() => 'Error desconocido')
@@ -2770,22 +2838,26 @@ function App() {
           formatCurrency={formatCurrency}
           onEnviar={async () => {
             try {
-              // Generar PDF y convertirlo a base64
-              console.log('🔄 Generando PDF...')
-              const pdfBase64 = await generatePDFBase64()
-              console.log('✅ PDF generado, longitud:', pdfBase64.length)
-              console.log('🔍 Primeros 100 caracteres:', pdfBase64.substring(0, 100))
+              // 1. Generar PDF y subirlo a Supabase Storage
+              console.log('🔄 Generando y subiendo PDF a Supabase...')
+              const pdfInfo = await generateAndUploadPDF(quoteData)
+              console.log('✅ PDF subido exitosamente:', pdfInfo.pdfUrl)
               
-              // Enviar datos con PDF a n8n
-              console.log('📤 Enviando a n8n...')
-              await sendToN8N(quoteData, pdfBase64)
+              // 2. Guardar cotización en la base de datos
+              console.log('💾 Guardando cotización en la base de datos...')
+              const cotizacionId = await saveCotizacionToDatabase(quoteData, pdfInfo)
+              console.log('✅ Cotización guardada con ID:', cotizacionId)
+              
+              // 3. Enviar datos a n8n con URL del PDF
+              console.log('📤 Enviando datos a n8n...')
+              await sendToN8N(quoteData, pdfInfo)
             } catch (error) {
               // Si el usuario canceló la previsualización, no mostrar error
               if (error.message && error.message.includes('cancelada')) {
                 console.log('ℹ️ Usuario canceló la previsualización del PDF')
                 return // Salir silenciosamente
               }
-              alert('Error al generar o enviar el presupuesto: ' + error.message)
+              alert('Error al generar, guardar o enviar el presupuesto: ' + error.message)
             }
           }}
         />
