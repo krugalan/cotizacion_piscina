@@ -596,6 +596,17 @@ textarea.form-input {
   letter-spacing: 0.5px;
 }
 
+/* Aumentar espacio entre tabla de materiales y construcción */
+.quote-table-container + h3.quote-table-title {
+  margin-top: 3rem !important;
+  padding-top: 2rem !important;
+}
+
+/* Espacio adicional después de la tabla de materiales */
+.quote-table-container:last-of-type {
+  margin-bottom: 2rem;
+}
+
 .quote-client-name {
   font-size: 1.25rem;
   font-weight: 700;
@@ -716,6 +727,15 @@ textarea.form-input {
   color: #333;
   word-wrap: break-word; /* Permitir que el texto se ajuste */
   overflow-wrap: break-word;
+}
+
+/* Permitir saltos de línea en descripciones de tablas de trabajo y costos adicionales */
+.quote-table tbody td:first-child {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  line-height: 1.4 !important;
+  hyphens: auto; /* Permite separación de palabras con guiones */
 }
 
 .quote-table td:last-child {

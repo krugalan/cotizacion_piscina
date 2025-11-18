@@ -1,0 +1,187 @@
+{
+  "name": "Cotización Piscina - Actualizado",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cotizacion",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d9199fc1-9938-4585-905c-4d360dea5e92",
+      "name": "Webhook",
+      "webhookId": "8ca13328-089e-423d-b62a-8907166f7f34"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b317e0d6-debb-4c9d-812a-8cda2ddcaa74",
+              "name": "nombreCliente",
+              "value": "={{ $json.body.nombreCompleto }}",
+              "type": "string"
+            },
+            {
+              "id": "414d75e8-2057-4912-87a5-15d3f557badb",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "028ed700-f963-4c2d-b3da-b7c0a739a3f3",
+              "name": "telefono",
+              "value": "={{ $json.body.telefono }}",
+              "type": "string"
+            },
+            {
+              "id": "new-field-1",
+              "name": "pdfUrl",
+              "value": "={{ $json.body.pdfUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "new-field-2",
+              "name": "pdfFilename",
+              "value": "={{ $json.body.pdfFilename }}",
+              "type": "string"
+            },
+            {
+              "id": "new-field-3",
+              "name": "tipoTrabajo",
+              "value": "={{ $json.body.tipoTrabajo }}",
+              "type": "string"
+            },
+            {
+              "id": "new-field-4",
+              "name": "presupuesto",
+              "value": "={{ $json.body.presupuesto }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "cc307e53-9d6d-4ab6-8b56-ccf4edd49204",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.pdfUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "cotizacion"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        432,
+        0
+      ],
+      "id": "4d0d14dd-2929-410c-b054-d904cccf75d7",
+      "name": "Download PDF from Supabase"
+    },
+    {
+      "parameters": {
+        "sendTo": "enzonkrug22@gmail.com",
+        "subject": "Presupuesto de Piscina - {{ $json.nombreCliente }}",
+        "message": "Hola,\n\nTe enviamos el presupuesto del cliente {{ $json.nombreCliente }}.\n\nTipo de trabajo: {{ $json.tipoTrabajo }}\nTotal: ${{ $json.presupuesto.total }} USD\n\nEl PDF se adjunta a este correo.\n\nSaludos,\nPool Smart",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "cotizacion"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        640,
+        0
+      ],
+      "id": "21bb869e-22ab-4a3f-900f-80f18fef40f1",
+      "name": "Send a message",
+      "webhookId": "c1be1091-f4f8-4872-8842-aa9f2fe9ff96",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "rndUy4wO570el3xb",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Download PDF from Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download PDF from Supabase": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "16566396-f8b0-4b37-b226-28eae61862e7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bd40b1ac8abff695cef2afd63b2436e05bd14e0c344ac2eee72265bb82e95d89"
+  },
+  "id": "L79RPW9OZeRmARQs",
+  "tags": []
+}
+
