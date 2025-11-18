@@ -1407,20 +1407,31 @@ function App() {
           onEnviar={async () => {
             try {
               // 1. Generar PDF y subirlo a Supabase Storage
-              console.log('🔄 Generando y subiendo PDF a Supabase...')
+              console.log('📄 Paso 1/3: Generando y subiendo PDF a Supabase Storage...')
               const pdfInfo = await generateAndUploadPDF(quoteData)
               console.log('✅ PDF subido exitosamente:', pdfInfo.pdfUrl)
+              console.log('📄 PDF Path:', pdfInfo.pdfPath)
+              console.log('📄 PDF Filename:', pdfInfo.pdfFilename)
               
               // 2. Guardar cotización en la base de datos
-              console.log('💾 Guardando cotización en la base de datos...')
+              console.log('💾 Paso 2/3: Guardando cotización en la base de datos Supabase...')
               const cotizacionId = await saveCotizacionToDatabase(quoteData, pdfInfo)
-              console.log('✅ Cotización guardada con ID:', cotizacionId)
+              console.log('✅ Cotización guardada exitosamente con ID:', cotizacionId)
               
               // 3. Enviar datos a n8n con URL del PDF
-              console.log('📤 Enviando datos a n8n...')
+              console.log('📤 Paso 3/3: Enviando datos a webhook de n8n...')
               await sendToN8N(quoteData, pdfInfo)
+              console.log('✅ Todos los pasos completados exitosamente')
+              
+              // Mensaje final de éxito
+              alert('✅ Presupuesto enviado exitosamente!\n\n' +
+                    '✓ PDF generado y subido a Supabase\n' +
+                    '✓ Cotización guardada en la base de datos\n' +
+                    '✓ Datos enviados a n8n')
             } catch (error) {
-              alert('Error al generar, guardar o enviar el presupuesto: ' + error.message)
+              console.error('❌ Error completo en el proceso de envío:', error)
+              alert('❌ Error al generar, guardar o enviar el presupuesto:\n\n' + error.message)
+              throw error // Re-lanzar para que handleEnviar lo capture
             }
           }}
         />
@@ -1498,8 +1509,7 @@ function QuoteModal({ quoteData, onClose, formatCurrency, generatePDFBlob, downl
   const handleEnviar = async () => {
     // Mostrar confirmación
     const confirmar = window.confirm(
-      '¿Está seguro de enviar el presupuesto?\n\n' +
-      'Se generará el PDF y se enviará toda la información al sistema.'
+      '¿Está seguro de enviar el presupuesto?\n\n'
     )
 
     if (!confirmar) {
@@ -1508,10 +1518,15 @@ function QuoteModal({ quoteData, onClose, formatCurrency, generatePDFBlob, downl
 
     setIsSending(true)
     try {
-      console.log('🔄 Generando PDF...')
+      console.log('🚀 Iniciando proceso completo de envío...')
+      
+      // Ejecutar el proceso completo: generar PDF, subir a Supabase, guardar en BD y enviar a n8n
       await onEnviar()
+      
+      console.log('✅ Proceso completo finalizado exitosamente')
     } catch (error) {
-      console.error('Error en handleEnviar:', error)
+      console.error('❌ Error en handleEnviar:', error)
+      alert('Error al enviar el presupuesto: ' + error.message)
     } finally {
       setIsSending(false)
     }
@@ -1719,83 +1734,31 @@ function QuoteModal({ quoteData, onClose, formatCurrency, generatePDFBlob, downl
         </div>
 
         <div className="modal-actions">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
-            {/* Botones de PDF */}
-            <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
-              <button 
-                className="btn btn-secondary" 
-                onClick={handleGeneratePDF}
-                disabled={isGeneratingPDF || isSending}
-                style={{ 
-                  flex: 1,
-                  opacity: (isGeneratingPDF || isSending) ? 0.6 : 1,
-                  cursor: (isGeneratingPDF || isSending) ? 'not-allowed' : 'pointer',
-                  backgroundColor: '#4CAF50',
-                  color: 'white',
-                  border: 'none'
-                }}
-              >
-                {isGeneratingPDF ? 'Generando...' : '📄 Generar PDF'}
-              </button>
-              <button 
-                className="btn btn-secondary" 
-                onClick={handleViewPDF}
-                disabled={!pdfBlob || isSending}
-                style={{ 
-                  flex: 1,
-                  opacity: (!pdfBlob || isSending) ? 0.6 : 1,
-                  cursor: (!pdfBlob || isSending) ? 'not-allowed' : 'pointer',
-                  backgroundColor: '#2196F3',
-                  color: 'white',
-                  border: 'none'
-                }}
-              >
-                👁️ Ver PDF
-              </button>
-              <button 
-                className="btn btn-secondary" 
-                onClick={handleDownloadPDF}
-                disabled={!pdfBlob || isSending}
-                style={{ 
-                  flex: 1,
-                  opacity: (!pdfBlob || isSending) ? 0.6 : 1,
-                  cursor: (!pdfBlob || isSending) ? 'not-allowed' : 'pointer',
-                  backgroundColor: '#FF9800',
-                  color: 'white',
-                  border: 'none'
-                }}
-              >
-                💾 Descargar
-              </button>
-            </div>
-            
-            {/* Botones principales */}
-            <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
-              <button 
-                className="btn btn-primary" 
-                onClick={handleEnviar}
-                disabled={isSending}
-                style={{ 
-                  flex: 1,
-                  opacity: isSending ? 0.6 : 1,
-                  cursor: isSending ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {isSending ? 'Enviando...' : 'Enviar'}
-              </button>
-              <button 
-                className="btn btn-secondary" 
-                onClick={onClose}
-                disabled={isSending}
-                style={{ 
-                  flex: 1,
-                  opacity: isSending ? 0.6 : 1,
-                  cursor: isSending ? 'not-allowed' : 'pointer'
-                }}
-              >
-                Editar
-              </button>
-            </div>
+          <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleEnviar}
+              disabled={isSending}
+              style={{ 
+                flex: 1,
+                opacity: isSending ? 0.6 : 1,
+                cursor: isSending ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {isSending ? 'Enviando...' : 'Enviar'}
+            </button>
+            <button 
+              className="btn btn-secondary" 
+              onClick={onClose}
+              disabled={isSending}
+              style={{ 
+                flex: 1,
+                opacity: isSending ? 0.6 : 1,
+                cursor: isSending ? 'not-allowed' : 'pointer'
+              }}
+            >
+              Editar
+            </button>
           </div>
         </div>
       </div>
