@@ -591,28 +591,7 @@ function App() {
     })
   }
 
-  // Función para convertir Blob a Base64
-  const convertBlobToBase64 = (blob) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        try {
-          const base64 = reader.result.split(',')[1]
-          console.log('✅ Base64 convertido:', base64.length, 'chars')
-          console.log('🔍 Inicio:', base64.substring(0, 50))
-          resolve(base64)
-        } catch (error) {
-          console.error('❌ Error extrayendo base64:', error)
-          reject(new Error('Error al extraer base64 del resultado: ' + error.message))
-        }
-      }
-      reader.onerror = () => {
-        console.error('❌ Error FileReader:', reader.error)
-        reject(new Error('Error en FileReader: ' + (reader.error?.message || 'Error desconocido')))
-      }
-      reader.readAsDataURL(blob)
-    })
-  }
+ 
 
   // Función para descargar PDF localmente
   const downloadPDF = (pdfBlob, filename) => {
@@ -628,438 +607,289 @@ function App() {
 
   // Función para generar PDF (solo genera el Blob, sin convertir a base64)
   const generatePDFBlob = async () => {
+    console.log('🔍 Buscando elemento .quote-document...')
+    
+    // Esperar un momento para asegurar que el DOM esté completamente renderizado
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
     const element = document.querySelector('.quote-document')
     if (!element) {
-      throw new Error('No se encontró el documento del presupuesto')
+      console.error('❌ No se encontró el elemento .quote-document')
+      console.log('Elementos disponibles:', document.querySelectorAll('.modal-content'))
+      throw new Error('No se encontró el elemento .quote-document. Asegúrate de que el modal esté abierto.')
+    }
+    
+    console.log('✅ Elemento .quote-document encontrado:', element)
+
+    // Clonar el elemento para no modificar el original
+    const clonedElement = element.cloneNode(true)
+    
+    // Configurar dimensiones A4 (210mm x 297mm) - Formato estándar internacional
+    // A4 es ideal para cotizaciones profesionales: balance perfecto entre espacio y legibilidad
+    clonedElement.style.display = 'block'
+    clonedElement.style.width = '210mm' // Ancho A4
+    clonedElement.style.maxWidth = '210mm'
+    clonedElement.style.margin = '0 auto'
+    clonedElement.style.background = 'white'
+    clonedElement.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    clonedElement.style.visibility = 'visible'
+    clonedElement.style.opacity = '1'
+    clonedElement.style.position = 'relative'
+    
+    // Aplicar estilos de página a cada sección
+    // Los saltos de página se manejan solo con CSS para evitar duplicación
+    const page1 = clonedElement.querySelector('.quote-page-1')
+    const page2 = clonedElement.querySelector('.quote-page-2')
+    const page3 = clonedElement.querySelector('.quote-page-3')
+    
+    if (page1) {
+      // No aplicar pageBreak aquí, se maneja con CSS
+      page1.style.minHeight = 'auto'
+      page1.style.height = 'auto'
+      page1.style.visibility = 'visible'
+      page1.style.opacity = '1'
+    }
+    
+    if (page2) {
+      // No aplicar pageBreak aquí, se maneja con CSS
+      page2.style.minHeight = 'auto'
+      page2.style.height = 'auto'
+      page2.style.visibility = 'visible'
+      page2.style.opacity = '1'
+      page2.style.display = 'block'
+      page2.style.position = 'relative'
+      page2.style.width = '100%'
+      page2.style.background = 'white'
+      // Asegurar padding mínimo para que tenga altura renderizable
+      page2.style.paddingTop = '1rem'
+      page2.style.paddingBottom = '1rem'
+      
+      // Verificar que tenga contenido
+      const page2Content = page2.innerHTML.trim()
+      console.log('📄 Página 2 - Contenido verificado:', {
+        hasContent: page2Content.length > 0,
+        contentLength: page2Content.length,
+        hasWorkCosts: page2.querySelector('.quote-table') !== null,
+        offsetHeight: page2.offsetHeight,
+        scrollHeight: page2.scrollHeight
+      })
+    }
+    
+    if (page3) {
+      // No aplicar pageBreak aquí, se maneja con CSS
+      page3.style.minHeight = 'auto'
+      page3.style.height = 'auto'
+      page3.style.visibility = 'visible'
+      page3.style.opacity = '1'
     }
 
-    // Ancho máximo para PDF A4 (210mm a 96 DPI ≈ 794px)
-    const PDF_MAX_WIDTH = 794
-
-    // Ocultar modal temporalmente para captura limpia
-    const modal = document.querySelector('.modal-overlay')
-    const originalModalDisplay = modal ? modal.style.display : null
-    if (modal) modal.style.display = 'none'
-
-    // Clonar el elemento
-    const clone = element.cloneNode(true)
-    clone.id = 'pdf-clone-' + Date.now()
-    clone.classList.add('generating-pdf')
-
-    // Aplicar estilos al clon
-    clone.style.setProperty('box-sizing', 'border-box', 'important')
-    clone.style.setProperty('width', `${PDF_MAX_WIDTH}px`, 'important')
-    clone.style.setProperty('max-width', `${PDF_MAX_WIDTH}px`, 'important')
-    clone.style.setProperty('background', 'white', 'important')
-    clone.style.setProperty('visibility', 'visible', 'important')
-    clone.style.setProperty('opacity', '1', 'important')
-    clone.style.setProperty('padding', '0', 'important')
-    clone.style.setProperty('margin', '0', 'important')
-    clone.style.setProperty('overflow', 'visible', 'important')
-
-    // Remover elementos innecesarios del clon
-    const closeBtn = clone.querySelector('.modal-close')
-    const actions = clone.querySelector('.modal-actions')
-    if (closeBtn) closeBtn.remove()
-    if (actions) actions.remove()
-
-    // Crear contenedor para el clon
+    // Crear un contenedor para el elemento clonado
+    // El elemento debe estar visible en la pantalla para que html2canvas lo capture
     const container = document.createElement('div')
-    container.className = 'pdf-container'
-    container.style.cssText = `
-      position: absolute !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: ${PDF_MAX_WIDTH}px !important;
-      max-width: ${PDF_MAX_WIDTH}px !important;
-      background: white !important;
-      z-index: 99999 !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      overflow: visible !important;
-    `
-
-    container.appendChild(clone)
+    container.style.position = 'fixed'
+    container.style.left = '0'
+    container.style.top = '0'
+    container.style.width = '794px' // 210mm en píxeles (210mm * 96 DPI / 25.4mm)
+    container.style.height = 'auto'
+    container.style.overflow = 'visible'
+    container.style.zIndex = '9999'
+    container.style.backgroundColor = 'white'
+    container.style.padding = '0'
+    container.style.margin = '0'
+    container.style.transform = 'translateX(-100%)' // Mover fuera de la vista pero mantener visible
+    container.appendChild(clonedElement)
+    
+    // Asegurar que el elemento clonado tenga dimensiones en píxeles
+    clonedElement.style.width = '794px'
+    clonedElement.style.maxWidth = '794px'
+    
+    // Agregar temporalmente al DOM para que html2pdf pueda procesarlo
     document.body.appendChild(container)
-
-    // Agregar estilos CSS para saltos de página
-    const style = document.createElement('style')
-    style.textContent = `
-      #${clone.id} {
-        width: ${PDF_MAX_WIDTH}px;
-        max-width: ${PDF_MAX_WIDTH}px;
-        font-size: 14px;
-        box-sizing: border-box;
-      }
-
-      /* Saltos de página automáticos */
-      #${clone.id} .quote-additional-costs-section {
-        page-break-before: always !important;
-        break-before: page !important;
-        page-break-inside: avoid !important;
-      }
-
-      /* Evitar cortes en tablas */
-      #${clone.id} .quote-table-container {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-
-      #${clone.id} .quote-table {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-
-      #${clone.id} .quote-table tr {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-
-      /* Mantener secciones juntas */
-      #${clone.id} .quote-summary {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-
-      #${clone.id} .quote-signature-section {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-
-      #${clone.id} .quote-footer-section {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-
-      /* Asegurar que los títulos no queden solos */
-      #${clone.id} .quote-table-title {
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-      }
-
-      /* Aumentar espacio entre tabla de materiales y construcción */
-      #${clone.id} .quote-table-container {
-        margin-bottom: 2rem !important;
-      }
-      
-      /* Espacio adicional antes del título "Construcción y Mano de Obra" cuando viene después de una tabla */
-      #${clone.id} .quote-table-container + h3.quote-table-title {
-        margin-top: 4rem !important;
-        padding-top: 2.5rem !important;
-      }
-
-      /* Saltos de línea en descripciones de tablas */
-      #${clone.id} .quote-table tbody td:first-child {
-        white-space: normal !important;
-        word-wrap: break-word !important;
-        overflow-wrap: break-word !important;
-        line-height: 1.4 !important;
-        hyphens: auto !important;
-      }
-    `
-    clone.appendChild(style)
-
-    // Esperar renderizado inicial para poder calcular alturas
-    await new Promise(resolve => setTimeout(resolve, 200))
-    clone.offsetHeight // Forzar reflow
-
-    // Calcular altura disponible de una página A4
-    // A4: 210mm × 297mm
-    // Con márgenes de 10mm cada lado: área útil = 190mm × 277mm
-    // A 96 DPI: 1mm ≈ 3.7795px, entonces 277mm ≈ 1047px
-    // Usamos 700px como altura máxima (más conservadora) para forzar salto de página antes
-    // Esto asegura que haya suficiente espacio y evita cortes
-    const PAGE_HEIGHT_MM = 277 // Altura útil en mm (297mm - 10mm arriba - 10mm abajo)
-    const MM_TO_PX = 3.7795 // Conversión mm a píxeles a 96 DPI
-    const PAGE_HEIGHT_PX = PAGE_HEIGHT_MM * MM_TO_PX // ≈ 1047px
-    const PAGE_HEIGHT_SAFE = PAGE_HEIGHT_PX // Altura segura más conservadora (reducida ~300px para más separación)
-
-    // Función auxiliar para calcular altura real de un elemento
-    const getElementHeight = (element) => {
-      if (!element) return 0
-      const rect = element.getBoundingClientRect()
-      return rect.height || element.offsetHeight || element.scrollHeight || 0
-    }
-
-    // Buscar el título "CONSTRUCCIÓN Y MANO DE OBRA" y su contenedor
-    const workTitleElements = clone.querySelectorAll('h3.quote-table-title')
-    let workTitleElement = null
-    let workTableContainer = null
-
-    workTitleElements.forEach(h3 => {
-      const text = h3.textContent || ''
-      if (text.includes('Construcción') && text.includes('Mano de Obra')) {
-        workTitleElement = h3
-        // Buscar el contenedor de la tabla que sigue al título
-        // El título está dentro de un fragmento React, buscar el siguiente elemento hermano
-        let current = h3.nextElementSibling
-        while (current) {
-          if (current.classList && current.classList.contains('quote-table-container')) {
-            workTableContainer = current
-            break
-          }
-          current = current.nextElementSibling
-        }
-        // Si no encontramos como hermano, buscar en el padre
-        if (!workTableContainer && h3.parentElement) {
-          const parent = h3.parentElement
-          const tableInParent = parent.querySelector('.quote-table-container')
-          if (tableInParent) {
-            workTableContainer = tableInParent
-          }
-        }
-      }
-    })
-
-    // Calcular si necesita salto de página
-    let needsPageBreak = false
-
-    if (workTitleElement) {
-      console.log('🔨 Analizando sección "CONSTRUCCIÓN Y MANO DE OBRA"...')
-
-      // Calcular altura acumulada de todo el contenido ANTES de "CONSTRUCCIÓN Y MANO DE OBRA"
-      // Recorrer todos los elementos del DOM hasta encontrar el título
-      let heightBeforeWork = 0
-      let foundWorkTitle = false
-      
-      // Función recursiva para recorrer el DOM
-      const calculateHeightBefore = (element) => {
-        if (!element || foundWorkTitle) return 0
-        
-        // Si encontramos el título, marcar y detener
-        if (element === workTitleElement || element.contains(workTitleElement)) {
-          foundWorkTitle = true
-          return 0
-        }
-        
-        let totalHeight = 0
-        
-        // Si es un elemento visible (no style, script, etc.)
-        if (element.nodeType === 1 && 
-            element.tagName !== 'STYLE' && 
-            element.tagName !== 'SCRIPT' &&
-            !element.classList.contains('pdf-container')) {
-          
-          // Obtener altura del elemento
-          const height = getElementHeight(element)
-          
-          // Si tiene hijos, calcular recursivamente
-          const children = Array.from(element.children)
-          let childrenHeight = 0
-          
-          for (const child of children) {
-            if (!foundWorkTitle) {
-              childrenHeight += calculateHeightBefore(child)
-            } else {
-              break
-            }
-          }
-          
-          // Si el elemento contiene el título, no sumar su altura completa
-          if (element.contains(workTitleElement)) {
-            totalHeight = childrenHeight
-          } else {
-            // Si no contiene el título, sumar su altura
-            totalHeight = height
-          }
-        }
-        
-        return totalHeight
-      }
-      
-      // Calcular altura desde el inicio del clone
-      heightBeforeWork = calculateHeightBefore(clone)
-      
-      // Método alternativo: recorrer elementos hijos directos
-      if (heightBeforeWork === 0 || !foundWorkTitle) {
-        foundWorkTitle = false
-        heightBeforeWork = 0
-        const allChildren = Array.from(clone.children)
-        
-        for (const child of allChildren) {
-          if (foundWorkTitle) break
-          
-          if (child === workTitleElement || child.contains(workTitleElement)) {
-            foundWorkTitle = true
-            break
-          }
-          
-          if (child.tagName !== 'STYLE') {
-            heightBeforeWork += getElementHeight(child)
-          }
-        }
-      }
-
-      // Calcular altura de la sección "CONSTRUCCIÓN Y MANO DE OBRA" completa
-      // Incluir el título y la tabla
-      let workSectionHeight = getElementHeight(workTitleElement)
-      
-      // Buscar la tabla asociada
-      if (workTableContainer) {
-        workSectionHeight += getElementHeight(workTableContainer)
-      } else {
-        // Buscar la tabla siguiente al título
-        let current = workTitleElement.nextElementSibling
-        while (current) {
-          if (current.classList && current.classList.contains('quote-table-container')) {
-            workSectionHeight += getElementHeight(current)
-            break
-          }
-          current = current.nextElementSibling
-        }
-      }
-      
-      // Agregar un margen de seguridad más grande (espacio entre secciones)
-      workSectionHeight += 50 // 50px de margen adicional para más separación
-
-      // Calcular altura total si se incluye en la página actual
-      const totalHeightIfIncluded = heightBeforeWork + workSectionHeight
-
-      // Calcular espacio disponible en la página actual
-      const availableHeight = PAGE_HEIGHT_SAFE - heightBeforeWork
-      
-   
     
-      const requiredAvailableHeight = workSectionHeight 
-
-     
-      // Si el contenido total no cabe en una página, forzar salto
-      if (totalHeightIfIncluded > PAGE_HEIGHT_SAFE) {
-        needsPageBreak = true
-        console.log('⚠️ El contenido NO cabe en una página - Se aplicará salto de página')
-      } else if (availableHeight < requiredAvailableHeight) {
-        // Si no hay suficiente espacio disponible (sección + 300px extra), forzar salto
-        needsPageBreak = true
-        console.log(`⚠️ No hay suficiente espacio disponible (se necesitan ${requiredAvailableHeight.toFixed(2)}px, hay ${availableHeight.toFixed(2)}px) - Se aplicará salto de página`)
-      } else {
-        console.log('✅ El contenido cabe en la página actual con suficiente espacio - No se necesita salto de página')
-      }
-    }
-
-    // Aplicar salto de página solo si es necesario y aumentar espacio
-    if (workTitleElement) {
-      // Aplicar espacio adicional antes del título "Construcción y Mano de Obra"
-      workTitleElement.style.setProperty('margin-top', '4rem', 'important')
-      workTitleElement.style.setProperty('padding-top', '2.5rem', 'important')
-      
-      if (needsPageBreak) {
-        console.log('🔨 Aplicando salto de página antes de "CONSTRUCCIÓN Y MANO DE OBRA"...')
-        // Aplicar estilos inline para forzar salto de página antes
-        workTitleElement.style.setProperty('page-break-before', 'always', 'important')
-        workTitleElement.style.setProperty('break-before', 'page', 'important')
-        workTitleElement.style.setProperty('page-break-inside', 'avoid', 'important')
-        // Agregar atributos para html2pdf.js
-        workTitleElement.setAttribute('data-page-break', 'before')
-        workTitleElement.setAttribute('data-html2pdf-page-break', 'before')
-        workTitleElement.classList.add('html2pdf__page-break')
-        console.log('✅ Salto de página aplicado antes de "CONSTRUCCIÓN Y MANO DE OBRA"')
-      } else {
-        console.log('ℹ️ No se necesita salto de página - El contenido cabe en la página actual')
-      }
-      console.log('✅ Espacio adicional aplicado antes de "CONSTRUCCIÓN Y MANO DE OBRA"')
-    }
-
+    // Forzar reflow para asegurar que los estilos se apliquen
+    void container.offsetHeight
+    void clonedElement.offsetHeight
     
-
-    // Esperar renderizado
+    // Esperar un momento para que el navegador renderice
     await new Promise(resolve => setTimeout(resolve, 200))
-    clone.offsetHeight // Forzar reflow
 
-    // Esperar a que se carguen recursos
-    await waitForResources(clone, 2500)
+    // Esperar a que los recursos carguen (imágenes, fuentes, etc.)
+    await waitForResources(clonedElement)
 
-    // Configuración de html2pdf.js
-    const options = {
-      margin: [10, 10, 10, 10],
+    // Configuración optimizada de html2pdf para formato A4
+    // A4 (210mm x 297mm) es el estándar internacional para documentos profesionales
+    const opt = {
+      margin: [15, 15, 15, 15], // Márgenes: [top, right, bottom, left] en mm
+      // Márgenes de 15mm proporcionan espacio profesional sin desperdiciar área útil
       filename: 'cotizacion.pdf',
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: PDF_MAX_WIDTH,
-        width: PDF_MAX_WIDTH,
+      image: { 
+        type: 'jpeg', 
+        quality: 0.95 // Alta calidad para texto nítido y gráficos claros
+      },
+      html2canvas: { 
+        scale: 2, // Escala 2x para mejor calidad de renderizado
+        useCORS: true, // Permitir imágenes de otros dominios
+        letterRendering: true, // Renderizado mejorado de texto
+        logging: true, // Activar logs para debugging
+        backgroundColor: '#ffffff', // Fondo blanco garantizado
+        windowWidth: 794, // Ancho en píxeles para A4 a 96 DPI (210mm)
+        windowHeight: 1123, // Alto en píxeles para A4 a 96 DPI (297mm)
         scrollX: 0,
-        scrollY: 0
+        scrollY: 0,
+        allowTaint: true,
+        removeContainer: false,
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
+          // Asegurar que el elemento clonado sea visible en el documento clonado
+          const clonedElement = clonedDoc.querySelector('.quote-document')
+          if (clonedElement) {
+            clonedElement.style.visibility = 'visible'
+            clonedElement.style.opacity = '1'
+            clonedElement.style.display = 'block'
+            clonedElement.style.position = 'relative'
+            clonedElement.style.width = '210mm'
+            clonedElement.style.background = 'white'
+            
+            // Asegurar que todas las páginas sean visibles en el clon
+            const page1 = clonedElement.querySelector('.quote-page-1')
+            const page2 = clonedElement.querySelector('.quote-page-2')
+            const page3 = clonedElement.querySelector('.quote-page-3')
+            
+            if (page1) {
+              page1.style.visibility = 'visible'
+              page1.style.opacity = '1'
+              page1.style.display = 'block'
+            }
+            
+            if (page2) {
+              page2.style.visibility = 'visible'
+              page2.style.opacity = '1'
+              page2.style.display = 'block'
+              page2.style.position = 'relative'
+              // NO aplicar pageBreakBefore aquí porque la página 1 ya tiene pageBreakAfter
+              // Esto evita crear una página en blanco
+              page2.style.pageBreakAfter = 'always'
+            }
+            
+            if (page3) {
+              page3.style.visibility = 'visible'
+              page3.style.opacity = '1'
+              page3.style.display = 'block'
+              // NO aplicar pageBreakBefore aquí porque la página 2 ya tiene pageBreakAfter
+            }
+            
+            console.log('📄 En onclone - Verificando páginas:', {
+              page1: !!page1,
+              page2: !!page2,
+              page3: !!page3,
+              page2Height: page2 ? page2.offsetHeight : 0,
+              page2Visible: page2 ? window.getComputedStyle(page2).visibility : 'none'
+            })
+          }
+        }
       },
-      jsPDF: {
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait',
-        compress: true
+      jsPDF: { 
+        unit: 'mm', // Unidades en milímetros (estándar internacional)
+        format: 'a4', // Formato A4: 210mm x 297mm
+        orientation: 'portrait', // Orientación vertical (ideal para cotizaciones)
+        compress: true, // Comprimir PDF para menor tamaño de archivo
+        precision: 2 // Precisión de 2 decimales para posicionamiento
       },
-      enableLinks: false
+      pagebreak: {
+        mode: ['css'], // Usar solo CSS para manejar saltos de página
+        // No especificar 'before' ni 'after' aquí para evitar duplicación
+        // Los saltos se manejan completamente con CSS (page-break-before/after)
+        avoid: [
+          '.quote-table', 
+          '.quote-table-container',
+          '.quote-summary', 
+          '.quote-signature-section'
+        ] // Solo evitar cortar elementos internos
+      }
     }
 
     try {
-      console.log('📄 Generando PDF...')
-      console.log('📐 Ancho del documento:', PDF_MAX_WIDTH, 'px')
-
-      // Generar PDF
-      const pdfBlob = await html2pdf()
-        .set(options)
-        .from(clone)
-        .toPdf()
-        .output('blob')
-
-      if (pdfBlob.size < 5000) {
-        throw new Error(`PDF muy pequeño: ${pdfBlob.size} bytes - probablemente vacío`)
+      console.log('📄 Iniciando generación de PDF con html2pdf...')
+      console.log('📐 Dimensiones del elemento:', {
+        width: clonedElement.offsetWidth,
+        height: clonedElement.offsetHeight,
+        scrollWidth: clonedElement.scrollWidth,
+        scrollHeight: clonedElement.scrollHeight
+      })
+      
+      // Generar el PDF como Blob
+      const pdfBlob = await html2pdf().set(opt).from(clonedElement).output('blob')
+      
+      console.log('✅ PDF generado exitosamente, tamaño:', (pdfBlob.size / 1024).toFixed(2), 'KB')
+      
+      // Limpiar: remover el contenedor del DOM
+      if (document.body.contains(container)) {
+        document.body.removeChild(container)
       }
+      
+      return pdfBlob
+    } catch (error) {
+      console.error('❌ Error al generar PDF:', error)
+      // Asegurarse de limpiar incluso si hay error
+      if (document.body.contains(container)) {
+        document.body.removeChild(container)
+      }
+      throw error
+    }
+  }
 
-      console.log('✅ PDF generado exitosamente:', pdfBlob.size, 'bytes')
+  // Función para generar PDF (sin descargar ni subir)
+  const generatePDFOnly = async () => {
+    try {
+      console.log('📄 Generando PDF...')
+      const pdfBlob = await generatePDFBlob()
+      console.log('✅ PDF generado, tamaño:', (pdfBlob.size / 1024).toFixed(2), 'KB')
       return pdfBlob
     } catch (error) {
       console.error('❌ Error al generar PDF:', error)
       throw error
-    } finally {
-      // Limpiar
-      container.remove()
-      if (modal && originalModalDisplay !== null) {
-        modal.style.display = originalModalDisplay
-      }
-      console.log('🧹 Limpiado')
     }
+  }
+
+  // Función para obtener el nombre del archivo PDF
+  const getPDFFilename = (quoteData) => {
+    const clientName = quoteData.formData?.clientName || 'Cliente'
+    const sanitizedName = clientName.replace(/[^a-zA-Z0-9]/g, '_')
+    const timestamp = new Date().toISOString().split('T')[0]
+    return `cotizacion_${sanitizedName}_${timestamp}`
   }
 
   // Función para generar PDF, descargarlo localmente y subirlo a Supabase Storage
   const generateAndUploadPDF = async (quoteData) => {
     try {
-      console.log('🔄 Generando PDF Blob...')
+      console.log('📄 Generando PDF...')
+      
       // 1. Generar el PDF Blob
       const pdfBlob = await generatePDFBlob()
+      console.log('✅ PDF generado, tamaño:', (pdfBlob.size / 1024).toFixed(2), 'KB')
       
-      // 2. Generar nombre del archivo
-      const clientName = quoteData.formData?.clientName || 'cliente'
-      const sanitizedClientName = clientName.replace(/[^a-zA-Z0-9-_]/g, '_')
-      const dateStr = new Date().toISOString().split('T')[0]
-      const filename = `presupuesto_${sanitizedClientName}_${dateStr}`
-      const fullFilename = `${filename}.pdf`
+      // 2. Obtener nombre del archivo
+      const filename = getPDFFilename(quoteData)
       
-      console.log('💾 Descargando PDF localmente...')
-      // 3. Descargar PDF localmente para revisión
-      downloadPDF(pdfBlob, fullFilename)
-      console.log('✅ PDF descargado localmente:', fullFilename)
-      
+      // 3. Subir a Supabase Storage
       console.log('☁️ Subiendo PDF a Supabase Storage...')
-      // 4. Subir PDF a Supabase Storage
-     // const uploadResult = await uploadPDFToStorage(pdfBlob, filename)
+      const uploadResult = await uploadPDFToStorage(pdfBlob, filename)
       
       if (uploadResult.error) {
-        throw new Error('Error al subir PDF a Supabase: ' + uploadResult.error.message)
+        throw new Error('Error al subir PDF: ' + uploadResult.error.message)
       }
       
-      console.log('✅ PDF subido exitosamente a Supabase')
-      console.log('🔗 URL del PDF:', uploadResult.url)
+      console.log('✅ PDF subido exitosamente:', uploadResult.url)
       
       return {
+        pdfBlob, // Incluir el blob para visualización/descarga
         pdfPath: uploadResult.path,
         pdfUrl: uploadResult.url,
-        pdfFilename: fullFilename
+        pdfFilename: `${filename}.pdf`
       }
     } catch (error) {
       console.error('❌ Error en generateAndUploadPDF:', error)
-      throw new Error('Error al generar o subir PDF: ' + error.message)
+      throw error
     }
   }
 
@@ -1572,6 +1402,8 @@ function App() {
           quoteData={quoteData} 
           onClose={closeModal}
           formatCurrency={formatCurrency}
+          generatePDFBlob={generatePDFBlob}
+          downloadPDF={downloadPDF}
           onEnviar={async () => {
             try {
               // 1. Generar PDF y subirlo a Supabase Storage
@@ -1597,14 +1429,70 @@ function App() {
   )
 }
 
-function QuoteModal({ quoteData, onClose, formatCurrency, onEnviar }) {
+function QuoteModal({ quoteData, onClose, formatCurrency, generatePDFBlob, downloadPDF, onEnviar }) {
   const [isSending, setIsSending] = useState(false)
+  const [pdfBlob, setPdfBlob] = useState(null)
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [showPDFViewer, setShowPDFViewer] = useState(false)
 
   const formData = quoteData.formData || {}
   const poolTypeNames = {
     rectangular: 'Rectangular',
     circular: 'Circular',
     oval: 'Oval'
+  }
+
+  // Función para generar PDF y guardarlo en el estado
+  const handleGeneratePDF = async () => {
+    setIsGeneratingPDF(true)
+    try {
+      console.log('🔄 Iniciando generación de PDF...')
+      
+      // Usar la función pasada como prop que ya tiene toda la lógica
+      const generatedBlob = await generatePDFBlob()
+      
+      if (!generatedBlob) {
+        throw new Error('No se pudo generar el PDF')
+      }
+      
+      setPdfBlob(generatedBlob)
+      console.log('✅ PDF generado exitosamente, tamaño:', (generatedBlob.size / 1024).toFixed(2), 'KB')
+      alert('✅ PDF generado exitosamente. Ahora puedes visualizarlo o descargarlo.')
+    } catch (error) {
+      console.error('❌ Error al generar PDF:', error)
+      alert('Error al generar el PDF: ' + error.message)
+    } finally {
+      setIsGeneratingPDF(false)
+    }
+  }
+
+  // Función para descargar el PDF
+  const handleDownloadPDF = () => {
+    if (!pdfBlob) {
+      alert('Primero debe generar el PDF')
+      return
+    }
+
+    const clientName = formData.clientName || 'Cliente'
+    const sanitizedName = clientName.replace(/[^a-zA-Z0-9]/g, '_')
+    const timestamp = new Date().toISOString().split('T')[0]
+    const filename = `cotizacion_${sanitizedName}_${timestamp}.pdf`
+    
+    downloadPDF(pdfBlob, filename)
+  }
+
+  // Función para visualizar el PDF
+  const handleViewPDF = () => {
+    if (!pdfBlob) {
+      alert('Primero debe generar el PDF')
+      return
+    }
+    setShowPDFViewer(true)
+  }
+
+  // Función para cerrar el visor de PDF
+  const handleClosePDFViewer = () => {
+    setShowPDFViewer(false)
   }
 
   const handleEnviar = async () => {
@@ -1635,218 +1523,369 @@ function QuoteModal({ quoteData, onClose, formatCurrency, onEnviar }) {
         <button className="modal-close" onClick={onClose}>×</button>
         
         <div className="quote-document">
-          {/* Header con ondas */}
-          <div className="quote-header-wave">
-            <div className="quote-header">
-              <div className="quote-logo-section">
-                <div className="quote-logo">🏊</div>
-                <div className="quote-company">
-                  <div className="quote-company-label">Nombre de</div>
-                  <div className="quote-company-name">tu empresa</div>
+          {/* HOJA 1: Header, Cliente, Proyecto, Materiales */}
+          <div className="quote-page-1">
+            {/* Header con ondas */}
+            <div className="quote-header-wave">
+              <div className="quote-header">
+                <div className="quote-logo-section">
+                  <div className="quote-logo">🏊</div>
+                  <div className="quote-company">
+                    <div className="quote-company-label">Nombre de</div>
+                    <div className="quote-company-name">tu empresa</div>
+                  </div>
                 </div>
-              </div>
-              <div className="quote-date">{quoteData.date}</div>
-            </div>
-          </div>
-
-          {/* Información del cliente */}
-          <div className="quote-client-info">
-            <div className="quote-client-name">{formData.clientName}</div>
-            {formData.clientEmail && (
-              <div className="quote-client-detail">{formData.clientEmail}</div>
-            )}
-            {formData.clientPhone && (
-              <div className="quote-client-detail">{formData.clientPhone}</div>
-            )}
-          </div>
-
-          {/* Información del proyecto */}
-          <div className="quote-project-info">
-            <div className="quote-project-detail">
-              <strong>Tipo de trabajo:</strong> {
-                formData.workType === 'construction' ? 'Construcción Nueva' :
-                formData.workType === 'repair' ? 'Reparación' :
-                formData.workType === 'renovation' ? 'Renovación' :
-                'Mantenimiento'
-              }
-            </div>
-            <div className="quote-project-detail">
-              <strong>Piscina:</strong> {poolTypeNames[formData.poolType]} - {formData.length}m × {formData.width}m × {formData.depth}m
-            </div>
-            <div className="quote-project-detail">
-              <strong>Volumen:</strong> {quoteData.volume} m³ | <strong>Área cerámica:</strong> {quoteData.ceramicArea} m²
-            </div>
-          </div>
-
-          {/* Tabla de materiales */}
-          {quoteData.materialCosts && quoteData.materialCosts.length > 0 && (
-            <>
-              <h3 className="quote-table-title">Materiales</h3>
-              <div className="quote-table-container">
-                <table className="quote-table">
-                  <thead>
-                    <tr>
-                      <th>Descripción</th>
-                      <th>Cantidad</th>
-                      <th>Und</th>
-                      <th>Precio Unit.</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quoteData.materialCosts.map((item, index) => (
-                      <tr key={index}>
-                        <td>{item.name}</td>
-                        <td>{item.quantity}</td>
-                        <td>{item.unit}</td>
-                        <td>{formatCurrency(item.unitPrice)}</td>
-                        <td>{formatCurrency(item.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-
-          {/* Tabla de trabajo */}
-          {quoteData.workCosts && quoteData.workCosts.length > 0 && (
-            <>
-              <h3 className="quote-table-title">Construcción y Mano de Obra</h3>
-              <div className="quote-table-container">
-                <table className="quote-table">
-                  <thead>
-                    <tr>
-                      <th>Descripción</th>
-                      <th>Cantidad</th>
-                      <th>Und</th>
-                      <th>Precio Unit.</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quoteData.workCosts.map((item, index) => (
-                      <tr key={index}>
-                        <td style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.4' }}>{item.name}</td>
-                        <td>{item.quantity}</td>
-                        <td>{item.unit}</td>
-                        <td>{formatCurrency(item.unitPrice)}</td>
-                        <td>{formatCurrency(item.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-
-          {/* Tabla de costos adicionales */}
-          {quoteData.additionalCosts && quoteData.additionalCosts.length > 0 && (
-            <div className="quote-additional-costs-section">
-              <h3 className="quote-table-title">Costos Adicionales</h3>
-              <div className="quote-table-container">
-                <table className="quote-table">
-                  <thead>
-                    <tr>
-                      <th>Descripción</th>
-                      <th>Cantidad</th>
-                      <th>Und</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quoteData.additionalCosts.map((item, index) => (
-                      <tr key={index}>
-                        <td style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.4' }}>{item.name}</td>
-                        <td>{item.quantity}</td>
-                        <td>{item.unit}</td>
-                        <td>{formatCurrency(item.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="quote-date">{quoteData.date}</div>
               </div>
             </div>
-          )}
 
-          {/* Resumen de costos */}
-          <div className="quote-summary">
-            <div className="quote-summary-row">
-              <span>SUBTOTAL:</span>
-              <span>{formatCurrency(quoteData.subtotal)}</span>
-            </div>
-            {parseFloat(quoteData.discount) > 0 && (
-              <div className="quote-summary-row discount">
-                <span>DESCUENTO 10%</span>
-                <span>{formatCurrency(quoteData.discount)}</span>
-              </div>
-            )}
-            <div className="quote-summary-total">
-              <span>TOTAL:</span>
-              <span>{formatCurrency(quoteData.totalCost)}</span>
-            </div>
-          </div>
-
-          {/* Sección de firma - debajo del total */}
-          <div className="quote-signature-section">
-            <div className="quote-signature">
-              <div className="quote-signature-line"></div>
-              <div className="quote-signature-id">C.C 0000000000</div>
-            </div>
-          </div>
-
-          {/* Notas */}
-          <div className="quote-footer-section">
-            <div className="quote-notes">
-              <strong>Nota:</strong> La cotización es válida por 7 días. La fecha de ejecución del servicio se coordinará según disponibilidad.
-              {formData.additionalNotes && (
-                <div style={{ marginTop: '0.5rem' }}>
-                  <strong>Notas adicionales:</strong> {formData.additionalNotes}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Footer con ondas */}
-          <div className="quote-footer-wave">
-            <div className="quote-footer-content">
-              {formData.clientPhone && (
-                <span className="quote-footer-item">📞 {formData.clientPhone}</span>
-              )}
+            {/* Información del cliente */}
+            <div className="quote-client-info">
+              <div className="quote-client-name">{formData.clientName}</div>
               {formData.clientEmail && (
-                <span className="quote-footer-item">✉️ {formData.clientEmail}</span>
+                <div className="quote-client-detail">{formData.clientEmail}</div>
               )}
-              <span className="quote-footer-item">@poolsmart</span>
+              {formData.clientPhone && (
+                <div className="quote-client-detail">{formData.clientPhone}</div>
+              )}
+            </div>
+
+            {/* Información del proyecto */}
+            <div className="quote-project-info">
+              <div className="quote-project-detail">
+                <strong>Tipo de trabajo:</strong> {
+                  formData.workType === 'construction' ? 'Construcción Nueva' :
+                  formData.workType === 'repair' ? 'Reparación' :
+                  formData.workType === 'renovation' ? 'Renovación' :
+                  'Mantenimiento'
+                }
+              </div>
+              <div className="quote-project-detail">
+                <strong>Piscina:</strong> {poolTypeNames[formData.poolType]} - {formData.length}m × {formData.width}m × {formData.depth}m
+              </div>
+              <div className="quote-project-detail">
+                <strong>Volumen:</strong> {quoteData.volume} m³ | <strong>Área cerámica:</strong> {quoteData.ceramicArea} m²
+              </div>
+            </div>
+
+            {/* Tabla de materiales */}
+            {quoteData.materialCosts && quoteData.materialCosts.length > 0 && (
+              <>
+                <h3 className="quote-table-title">Materiales</h3>
+                <div className="quote-table-container">
+                  <table className="quote-table">
+                    <thead>
+                      <tr>
+                        <th>Descripción</th>
+                        <th>Cantidad</th>
+                        <th>Und</th>
+                        <th>Precio Unit.</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {quoteData.materialCosts.map((item, index) => (
+                        <tr key={index}>
+                          <td>{item.name}</td>
+                          <td>{item.quantity}</td>
+                          <td>{item.unit}</td>
+                          <td>{formatCurrency(item.unitPrice)}</td>
+                          <td>{formatCurrency(item.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* HOJA 2: Construcción y Mano de Obra, Costos Adicionales */}
+          <div className="quote-page-2">
+            {/* Tabla de trabajo */}
+            {quoteData.workCosts && quoteData.workCosts.length > 0 && (
+              <>
+                <h3 className="quote-table-title">Construcción y Mano de Obra</h3>
+                <div className="quote-table-container">
+                  <table className="quote-table">
+                    <thead>
+                      <tr>
+                        <th>Descripción</th>
+                        <th>Cantidad</th>
+                        <th>Und</th>
+                        <th>Precio Unit.</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {quoteData.workCosts.map((item, index) => (
+                        <tr key={index}>
+                          <td style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.4' }}>{item.name}</td>
+                          <td>{item.quantity}</td>
+                          <td>{item.unit}</td>
+                          <td>{formatCurrency(item.unitPrice)}</td>
+                          <td>{formatCurrency(item.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Tabla de costos adicionales */}
+            {quoteData.additionalCosts && quoteData.additionalCosts.length > 0 && (
+              <div className="quote-additional-costs-section">
+                <h3 className="quote-table-title">Costos Adicionales</h3>
+                <div className="quote-table-container">
+                  <table className="quote-table">
+                    <thead>
+                      <tr>
+                        <th>Descripción</th>
+                        <th>Cantidad</th>
+                        <th>Und</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {quoteData.additionalCosts.map((item, index) => (
+                        <tr key={index}>
+                          <td style={{ whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.4' }}>{item.name}</td>
+                          <td>{item.quantity}</td>
+                          <td>{item.unit}</td>
+                          <td>{formatCurrency(item.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* HOJA 3: Resumen, Firma, Notas, Footer */}
+          <div className="quote-page-3">
+            {/* Resumen de costos */}
+            <div className="quote-summary">
+              <div className="quote-summary-row">
+                <span>SUBTOTAL:</span>
+                <span>{formatCurrency(quoteData.subtotal)}</span>
+              </div>
+              {parseFloat(quoteData.discount) > 0 && (
+                <div className="quote-summary-row discount">
+                  <span>DESCUENTO 10%</span>
+                  <span>{formatCurrency(quoteData.discount)}</span>
+                </div>
+              )}
+              <div className="quote-summary-total">
+                <span>TOTAL:</span>
+                <span>{formatCurrency(quoteData.totalCost)}</span>
+              </div>
+            </div>
+
+            {/* Sección de firma - debajo del total */}
+            <div className="quote-signature-section">
+              <div className="quote-signature">
+                <div className="quote-signature-line"></div>
+                <div className="quote-signature-id">C.C 0000000000</div>
+              </div>
+            </div>
+
+            {/* Notas */}
+            <div className="quote-footer-section">
+              <div className="quote-notes">
+                <strong>Nota:</strong> La cotización es válida por 7 días. La fecha de ejecución del servicio se coordinará según disponibilidad.
+                {formData.additionalNotes && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <strong>Notas adicionales:</strong> {formData.additionalNotes}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer con ondas */}
+            <div className="quote-footer-wave">
+              <div className="quote-footer-content">
+                {formData.clientPhone && (
+                  <span className="quote-footer-item">📞 {formData.clientPhone}</span>
+                )}
+                {formData.clientEmail && (
+                  <span className="quote-footer-item">✉️ {formData.clientEmail}</span>
+                )}
+                <span className="quote-footer-item">@poolsmart</span>
+              </div>
             </div>
           </div>
         </div>
 
         <div className="modal-actions">
-          <button 
-            className="btn btn-primary" 
-            onClick={handleEnviar}
-            disabled={isSending}
-            style={{ 
-              flex: 1,
-              opacity: isSending ? 0.6 : 1,
-              cursor: isSending ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {isSending ? 'Enviando...' : 'Enviar'}
-          </button>
-          <button 
-            className="btn btn-secondary" 
-            onClick={onClose}
-            disabled={isSending}
-            style={{ 
-              flex: 1,
-              opacity: isSending ? 0.6 : 1,
-              cursor: isSending ? 'not-allowed' : 'pointer'
-            }}
-          >
-            Editar
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+            {/* Botones de PDF */}
+            <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={handleGeneratePDF}
+                disabled={isGeneratingPDF || isSending}
+                style={{ 
+                  flex: 1,
+                  opacity: (isGeneratingPDF || isSending) ? 0.6 : 1,
+                  cursor: (isGeneratingPDF || isSending) ? 'not-allowed' : 'pointer',
+                  backgroundColor: '#4CAF50',
+                  color: 'white',
+                  border: 'none'
+                }}
+              >
+                {isGeneratingPDF ? 'Generando...' : '📄 Generar PDF'}
+              </button>
+              <button 
+                className="btn btn-secondary" 
+                onClick={handleViewPDF}
+                disabled={!pdfBlob || isSending}
+                style={{ 
+                  flex: 1,
+                  opacity: (!pdfBlob || isSending) ? 0.6 : 1,
+                  cursor: (!pdfBlob || isSending) ? 'not-allowed' : 'pointer',
+                  backgroundColor: '#2196F3',
+                  color: 'white',
+                  border: 'none'
+                }}
+              >
+                👁️ Ver PDF
+              </button>
+              <button 
+                className="btn btn-secondary" 
+                onClick={handleDownloadPDF}
+                disabled={!pdfBlob || isSending}
+                style={{ 
+                  flex: 1,
+                  opacity: (!pdfBlob || isSending) ? 0.6 : 1,
+                  cursor: (!pdfBlob || isSending) ? 'not-allowed' : 'pointer',
+                  backgroundColor: '#FF9800',
+                  color: 'white',
+                  border: 'none'
+                }}
+              >
+                💾 Descargar
+              </button>
+            </div>
+            
+            {/* Botones principales */}
+            <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleEnviar}
+                disabled={isSending}
+                style={{ 
+                  flex: 1,
+                  opacity: isSending ? 0.6 : 1,
+                  cursor: isSending ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSending ? 'Enviando...' : 'Enviar'}
+              </button>
+              <button 
+                className="btn btn-secondary" 
+                onClick={onClose}
+                disabled={isSending}
+                style={{ 
+                  flex: 1,
+                  opacity: isSending ? 0.6 : 1,
+                  cursor: isSending ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Editar
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Modal para visualizar PDF */}
+      {showPDFViewer && pdfBlob && (
+        <PDFViewerModal 
+          pdfBlob={pdfBlob} 
+          onClose={handleClosePDFViewer}
+          onDownload={handleDownloadPDF}
+        />
+      )}
+    </div>
+  )
+}
+
+// Componente para visualizar el PDF
+function PDFViewerModal({ pdfBlob, onClose, onDownload }) {
+  const pdfUrl = URL.createObjectURL(pdfBlob)
+
+  // Limpiar URL cuando el componente se desmonte
+  useEffect(() => {
+    return () => {
+      URL.revokeObjectURL(pdfUrl)
+    }
+  }, [pdfUrl])
+
+  return (
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 2000 }}>
+      <div 
+        className="modal-content" 
+        onClick={(e) => e.stopPropagation()}
+        style={{ 
+          maxWidth: '90vw', 
+          maxHeight: '90vh', 
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '0'
+        }}
+      >
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          padding: '1rem',
+          borderBottom: '1px solid #e0e0e0',
+          backgroundColor: '#f5f5f5'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Vista Previa del PDF</h2>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button 
+              className="btn btn-secondary"
+              onClick={onDownload}
+              style={{ 
+                backgroundColor: '#FF9800',
+                color: 'white',
+                border: 'none',
+                padding: '0.5rem 1rem'
+              }}
+            >
+              💾 Descargar
+            </button>
+            <button 
+              className="modal-close" 
+              onClick={onClose}
+              style={{ 
+                fontSize: '1.5rem',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0.5rem',
+                lineHeight: '1'
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <iframe
+          src={pdfUrl}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            flex: 1
+          }}
+          title="Vista previa del PDF"
+        />
       </div>
     </div>
   )

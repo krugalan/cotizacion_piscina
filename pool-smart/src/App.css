@@ -498,6 +498,64 @@ textarea.form-input {
   position: relative;
 }
 
+/* Divisiones de páginas para PDF */
+.quote-page-1,
+.quote-page-2,
+.quote-page-3 {
+  position: relative;
+  min-height: auto; /* Eliminar altura mínima fija para evitar páginas en blanco */
+  height: auto;
+  page-break-inside: avoid;
+}
+
+/* Hoja 1: Header, Cliente, Proyecto, Materiales */
+.quote-page-1 {
+  page-break-after: always;
+  /* Esto creará automáticamente la página 2, no necesitamos page-break-before en page-2 */
+  page-break-inside: avoid;
+}
+
+/* Hoja 2: Construcción y Mano de Obra, Costos Adicionales */
+.quote-page-2 {
+  /* NO usar page-break-before porque la página 1 ya tiene page-break-after */
+  /* Esto evita crear una página en blanco antes del contenido */
+  page-break-after: always;
+  /* Esto creará la página 3 */
+  page-break-inside: avoid;
+  /* Asegurar que el contenido sea visible */
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  position: relative !important;
+}
+
+/* Hoja 3: Resumen, Firma, Notas, Footer */
+.quote-page-3 {
+  /* NO usar page-break-before porque la página 2 ya tiene page-break-after */
+  /* Esto evita crear una página en blanco antes del contenido */
+  page-break-inside: avoid;
+  /* No usar page-break-after porque es la última página */
+}
+
+/* Asegurar que las tablas no se corten entre páginas */
+.quote-page-1 .quote-table-container,
+.quote-page-2 .quote-table-container,
+.quote-page-3 .quote-table-container {
+  page-break-inside: avoid;
+}
+
+.quote-page-1 .quote-table,
+.quote-page-2 .quote-table,
+.quote-page-3 .quote-table {
+  page-break-inside: avoid;
+}
+
+/* Asegurar que el resumen y la firma no se corten */
+.quote-page-3 .quote-summary,
+.quote-page-3 .quote-signature-section {
+  page-break-inside: avoid;
+}
+
 /* Header Wave */
 .quote-header-wave {
   background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
@@ -1000,9 +1058,9 @@ textarea.form-input {
     page-break-inside: avoid !important;
   }
 
-  /* Forzar salto de página antes de Costos Adicionales en PDF */
+  /* Costos Adicionales - NO forzar salto aquí, ya está dentro de quote-page-2 */
   .quote-document.generating-pdf .quote-additional-costs-section {
-    page-break-before: always !important;
+    page-break-before: avoid !important; /* Evitar salto adicional */
     page-break-inside: avoid !important;
   }
 
@@ -1386,13 +1444,12 @@ textarea.form-input {
     flex-shrink: 0 !important;
   }
 
-  /* Forzar salto de página antes de Costos Adicionales y todo lo que sigue */
-  /* Esto asegura que cuando hay más de una página, esta sección vaya a la segunda página */
+  /* Costos Adicionales - NO forzar salto de página aquí porque ya está dentro de quote-page-2 */
+  /* El salto de página se maneja a nivel de quote-page-2 */
   .quote-additional-costs-section {
-    page-break-before: always !important;
+    page-break-before: avoid !important; /* Evitar salto adicional */
     page-break-inside: avoid !important;
     flex-shrink: 0 !important;
-    break-before: page !important;
   }
 
   .quote-summary {
