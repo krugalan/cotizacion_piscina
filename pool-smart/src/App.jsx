@@ -766,16 +766,14 @@ function App() {
               page2.style.opacity = '1'
               page2.style.display = 'block'
               page2.style.position = 'relative'
-              // NO aplicar pageBreakBefore aquí porque la página 1 ya tiene pageBreakAfter
-              // Esto evita crear una página en blanco
-              page2.style.pageBreakAfter = 'always'
+              // NO aplicar pageBreakAfter para permitir que el contenido fluya naturalmente
             }
             
             if (page3) {
               page3.style.visibility = 'visible'
               page3.style.opacity = '1'
               page3.style.display = 'block'
-              // NO aplicar pageBreakBefore aquí porque la página 2 ya tiene pageBreakAfter
+              // Permitir que el contenido fluya naturalmente desde la página 2
             }
             
             console.log('📄 En onclone - Verificando páginas:', {

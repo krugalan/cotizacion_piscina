@@ -523,9 +523,7 @@ textarea.form-input {
 /* Hoja 2: Construcción y Mano de Obra, Costos Adicionales */
 .quote-page-2 {
   /* NO usar page-break-before porque la página 1 ya tiene page-break-after */
-  /* Esto evita crear una página en blanco antes del contenido */
-  page-break-after: always;
-  /* Esto creará la página 3 */
+  /* NO usar page-break-after para permitir que el contenido fluya naturalmente */
   page-break-inside: avoid;
   /* Asegurar que el contenido sea visible */
   visibility: visible !important;
@@ -536,8 +534,9 @@ textarea.form-input {
 
 /* Hoja 3: Resumen, Firma, Notas, Footer */
 .quote-page-3 {
-  /* NO usar page-break-before porque la página 2 ya tiene page-break-after */
-  /* Esto evita crear una página en blanco antes del contenido */
+  /* Permitir que el contenido fluya naturalmente desde la página 2 */
+  /* Solo hacer salto de página si es necesario por espacio */
+  page-break-before: auto;
   page-break-inside: avoid;
   /* No usar page-break-after porque es la última página */
 }
