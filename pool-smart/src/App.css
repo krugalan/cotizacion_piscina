@@ -689,8 +689,8 @@ textarea.form-input {
 }
 
 .quote-table {
-  width: calc(100% - 50px); /* Reducir 50px del ancho total */
-  max-width: calc(100% - 50px);
+  width: calc(100%); /* Reducir 50px del ancho total */
+  max-width: calc(100%);
   border-collapse: collapse;
   background: white;
   table-layout: fixed; /* Fijar el layout para controlar anchos */
