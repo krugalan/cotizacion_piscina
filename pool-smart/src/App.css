@@ -349,7 +349,7 @@ textarea.form-input {
   }
 
   .quote-table-container {
-    padding: 0 1.5rem;
+    padding: 0;
     overflow-x: auto;
   }
 
@@ -450,13 +450,15 @@ textarea.form-input {
 .modal-content {
   background: white;
   border-radius: 10px;
-  max-width: 900px;
+  max-width: 950px; /* Aumentado ligeramente para mejor visualización */
   width: 100%;
-  max-height: 90vh;
+  max-height: 95vh; /* Aumentado para mostrar más contenido */
   overflow-y: auto;
   position: relative;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   animation: slideUp 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-close {
@@ -494,8 +496,11 @@ textarea.form-input {
 /* Quote Document Styles */
 .quote-document {
   background: white;
-  padding: 0;
+  padding: 50px; /* Padding de 50px en todos los lados */
   position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  margin: 1rem;
 }
 
 /* Divisiones de páginas para PDF */
@@ -559,7 +564,7 @@ textarea.form-input {
 /* Header Wave */
 .quote-header-wave {
   background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-  padding: 2rem 2.5rem;
+  padding: 0.75rem 1rem; /* Más reducido */
   position: relative;
   overflow: hidden;
 }
@@ -590,14 +595,14 @@ textarea.form-input {
 }
 
 .quote-logo {
-  font-size: 3rem;
-  width: 60px;
-  height: 60px;
+  font-size: 2rem; /* Reducido de 2.5rem */
+  width: 40px; /* Reducido de 50px */
+  height: 40px; /* Reducido de 50px */
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .quote-company {
@@ -605,39 +610,39 @@ textarea.form-input {
 }
 
 .quote-company-label {
-  font-size: 0.85rem;
+  font-size: 0.7rem; /* Reducido de 0.75rem */
   opacity: 0.8;
   color: rgba(255, 255, 255, 0.9);
 }
 
 .quote-company-name {
-  font-size: 1.25rem;
+  font-size: 0.9rem; /* Reducido de 1rem */
   font-weight: 600;
   color: white;
 }
 
 .quote-date {
   color: white;
-  font-size: 1rem;
+  font-size: 0.75rem; /* Reducido de 0.85rem */
   font-weight: 500;
 }
 
 /* Client Info */
 .quote-client-info {
-  padding: 2rem 2.5rem 1.5rem;
+  padding: 1rem 1rem 0.75rem; /* Reducido */
   background: white;
 }
 
 .quote-project-info {
-  padding: 1.5rem 2.5rem;
+  padding: 0.75rem 1rem; /* Reducido */
   background: #f5f7fa;
   border-top: 2px solid #e0e0e0;
   border-bottom: 2px solid #e0e0e0;
 }
 
 .quote-project-detail {
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
   color: #333;
 }
 
@@ -646,8 +651,8 @@ textarea.form-input {
 }
 
 .quote-table-title {
-  padding: 1rem 2.5rem 0.5rem;
-  font-size: 1.1rem;
+  padding: 0.75rem 1rem 0.5rem; /* Reducido de 1.5rem */
+  font-size: 0.9rem;
   font-weight: 700;
   color: #1e3a5f;
   text-transform: uppercase;
@@ -666,29 +671,32 @@ textarea.form-input {
 }
 
 .quote-client-name {
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #333;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
 .quote-client-detail {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   color: #666;
-  margin-top: 0.25rem;
+  margin-top: 0.2rem;
 }
 
 /* Table */
 .quote-table-container {
-  padding: 0 2.5rem;
-  margin-bottom: 1.5rem;
+  padding: 0; /* Reducido de 1.5rem */
+  margin-bottom: 1rem;
 }
 
 .quote-table {
-  width: 100%;
+  width: calc(100% - 50px); /* Reducir 50px del ancho total */
+  max-width: calc(100% - 50px);
   border-collapse: collapse;
   background: white;
   table-layout: fixed; /* Fijar el layout para controlar anchos */
+  font-size: 0.75rem; /* Reducir tamaño de fuente base de la tabla */
+  margin: 0 auto; /* Centrar la tabla */
 }
 
 .quote-table thead {
@@ -697,79 +705,80 @@ textarea.form-input {
 }
 
 .quote-table th {
-  padding: 1rem;
+  padding: 0.5rem 0.4rem;
   text-align: left;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
-/* Anchos específicos para cada columna (tablas con 5 columnas) */
+/* Anchos específicos para cada columna (tablas con 5 columnas) - Más estrechas */
 .quote-table th:nth-child(1),
 .quote-table td:nth-child(1) {
-  width: 32%; /* Descripción - ajustado para dar espacio a UND */
+  width: 30%; /* Descripción - reducido */
 }
 
 .quote-table th:nth-child(2),
 .quote-table td:nth-child(2) {
-  width: 12%; /* Cantidad */
+  width: 8%; /* Cantidad - reducido */
   text-align: right;
 }
 
 .quote-table th:nth-child(3),
 .quote-table td:nth-child(3) {
-  width: 15%; /* Und - aumentado para evitar cortes */
-  white-space: nowrap; /* Evitar que el texto se divida en líneas */
-  min-width: 80px; /* Ancho mínimo para palabras como "servicio" */
-  overflow: visible; /* Permitir que el texto completo sea visible */
+  width: 10%; /* Und - más reducido */
+  white-space: nowrap;
+  font-size: 0.65rem; /* Fuente aún más pequeña */
 }
 
 .quote-table th:nth-child(4),
 .quote-table td:nth-child(4) {
-  width: 18%; /* Precio Unit. */
+  width: 20%; /* Precio Unit. - ajustado */
   text-align: right;
+  font-size: 0.7rem;
 }
 
 .quote-table th:nth-child(5),
 .quote-table td:nth-child(5) {
-  width: 23%; /* Total - ajustado ligeramente */
+  width: 32%; /* Total - aumentado para compensar */
   text-align: right;
-  padding-right: 1.5rem; /* Padding extra a la derecha - mismo para header y celdas */
-  white-space: nowrap; /* Evitar que el total se divida en líneas */
+  padding-right: 0.5rem; /* Padding reducido */
+  white-space: nowrap;
+  font-size: 0.75rem;
 }
 
 /* Asegurar que el header de TOTAL tenga el mismo padding que las celdas */
 .quote-table th:nth-child(5) {
-  padding-right: 1.5rem; /* Mismo padding que las celdas para alineación vertical */
+  padding-right: 0.5rem;
 }
 
-/* Tablas con 4 columnas (Costos Adicionales) */
+/* Tablas con 4 columnas (Costos Adicionales) - Más estrechas */
 .quote-table-additional th:nth-child(1),
 .quote-table-additional td:nth-child(1) {
-  width: 42% !important; /* Descripción - ajustado para dar espacio a UND */
+  width: 40% !important; /* Descripción - reducido */
 }
 
 .quote-table-additional th:nth-child(2),
 .quote-table-additional td:nth-child(2) {
-  width: 15% !important; /* Cantidad */
+  width: 10% !important; /* Cantidad - reducido */
   text-align: right;
 }
 
 .quote-table-additional th:nth-child(3),
 .quote-table-additional td:nth-child(3) {
-  width: 18% !important; /* Und - aumentado para evitar cortes */
-  white-space: nowrap !important; /* Evitar que el texto se divida en líneas */
-  min-width: 90px !important; /* Ancho mínimo para palabras como "servicio" */
-  overflow: visible !important; /* Permitir que el texto completo sea visible */
+  width: 12% !important; /* Und - más reducido */
+  white-space: nowrap !important;
+  font-size: 0.65rem !important;
 }
 
 .quote-table-additional th:nth-child(4),
 .quote-table-additional td:nth-child(4) {
-  width: 25% !important; /* Total - suficiente espacio */
+  width: 38% !important; /* Total - aumentado */
   text-align: right;
-  padding-right: 1.5rem !important; /* Padding extra a la derecha */
-  white-space: nowrap !important; /* Evitar que el total se divida en líneas */
+  padding-right: 0.5rem !important; /* Padding reducido */
+  white-space: nowrap !important;
+  font-size: 0.75rem !important;
 }
 
 .quote-table tbody tr {
@@ -781,10 +790,12 @@ textarea.form-input {
 }
 
 .quote-table td {
-  padding: 1rem;
+  padding: 0.5rem 0.4rem;
   color: #333;
   word-wrap: break-word; /* Permitir que el texto se ajuste */
   overflow-wrap: break-word;
+  font-size: 0.75rem; /* Tamaño de fuente reducido */
+  line-height: 1.3; /* Interlineado más compacto */
 }
 
 /* Permitir saltos de línea en descripciones de tablas de trabajo y costos adicionales */
@@ -803,29 +814,29 @@ textarea.form-input {
 
 /* Summary */
 .quote-summary {
-  padding: 0 2.5rem; /* Mismo padding que quote-table-container */
-  margin-bottom: 2rem;
+  padding: 0 1.5rem; /* Reducido para coincidir con quote-table-container */
+  margin-bottom: 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .quote-summary-row {
   display: flex;
   justify-content: space-between;
-  width: 285px;
+  width: 250px;
   max-width: 100%;
-  padding: 0.5rem 0;
-  font-size: 0.95rem;
+  padding: 0.3rem 0;
+  font-size: 0.8rem;
   color: #333;
 }
 
 /* Alinear el valor del subtotal con el título TOTAL de la columna */
 .quote-summary-row span:last-child {
   text-align: right;
-  padding-right: 1.5rem; /* Mismo padding que el header "TOTAL" para alineación vertical */
-  min-width: 100px; /* Ancho mínimo para mantener alineación */
+  padding-right: 0.8rem; /* Reducido para coincidir con el nuevo padding */
+  min-width: 80px; /* Ancho mínimo reducido */
   display: inline-block; /* Para que el padding funcione correctamente */
 }
 
@@ -836,49 +847,49 @@ textarea.form-input {
 .quote-summary-total {
   display: flex;
   justify-content: space-between;
-  width: 300px;
+  width: 250px;
   max-width: 100%;
-  padding: 1rem;
+  padding: 0.7rem;
   background: #1e3a5f;
   color: white;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   border-radius: 5px;
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
 }
 
 /* Sección de firma - debajo del total con más espacio */
 .quote-signature-section {
-  padding: 12rem 2.5rem 3rem; /* El doble de espacio arriba entre TOTAL y firma */
+  padding: 8rem 1rem 2rem; /* Padding reducido */
   display: flex;
   justify-content: flex-end; /* Alineado a la derecha como el total */
   align-items: flex-start;
-  min-height: 250px; /* Mayor altura mínima para espacio de firma */
+  min-height: 200px; /* Altura mínima reducida */
 }
 
 .quote-signature {
   text-align: center;
-  width: 300px; /* Mismo ancho que el total para centrarla con él */
+  width: 250px; /* Reducido para coincidir con el ancho del resumen */
   max-width: 100%;
   margin-right: 0;
 }
 
 .quote-signature-line {
-  width: 250px;
+  width: 200px;
   height: 2px;
   background: #333;
-  margin: 0 auto 0.5rem; /* Centrada dentro del contenedor de 300px */
+  margin: 0 auto 0.4rem; /* Centrada */
 }
 
 .quote-signature-id {
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   color: #666;
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
 }
 
 /* Footer Section - solo notas */
 .quote-footer-section {
-  padding: 0 2.5rem 2.5rem; /* Aún más espacio abajo */
+  padding: 0 1rem 1rem; /* Padding reducido */
   display: flex;
   justify-content: flex-start;
   align-items: flex-start;
@@ -886,9 +897,9 @@ textarea.form-input {
 
 .quote-notes {
   flex: 1;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: #666;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .quote-notes strong {
@@ -898,10 +909,10 @@ textarea.form-input {
 /* Footer Wave */
 .quote-footer-wave {
   background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-  padding: 1.5rem 2.5rem;
+  padding: 0.75rem 1rem; /* Más reducido */
   position: relative;
   overflow: hidden;
-  margin-top: 6rem; /* Aún más espacio antes del footer para la firma */
+  margin-top: 4rem; /* Espacio reducido para PDF */
 }
 
 .quote-footer-wave::before {
@@ -918,10 +929,10 @@ textarea.form-input {
 .quote-footer-content {
   display: flex;
   justify-content: center;
-  gap: 2rem;
+  gap: 1rem; /* Reducido de 1.5rem */
   flex-wrap: wrap;
   color: white;
-  font-size: 0.9rem;
+  font-size: 0.7rem; /* Reducido de 0.75rem */
   position: relative;
   z-index: 1;
 }

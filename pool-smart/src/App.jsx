@@ -689,7 +689,7 @@ function App() {
     container.style.position = 'fixed'
     container.style.left = '0'
     container.style.top = '0'
-    container.style.width = '794px' // 210mm en píxeles (210mm * 96 DPI / 25.4mm)
+    container.style.width = '744px' // 50px menos que 794px (210mm - ~13mm)
     container.style.height = 'auto'
     container.style.overflow = 'visible'
     container.style.zIndex = '9999'
@@ -699,9 +699,9 @@ function App() {
     container.style.transform = 'translateX(-100%)' // Mover fuera de la vista pero mantener visible
     container.appendChild(clonedElement)
     
-    // Asegurar que el elemento clonado tenga dimensiones en píxeles
-    clonedElement.style.width = '794px'
-    clonedElement.style.maxWidth = '794px'
+    // Asegurar que el elemento clonado tenga dimensiones en píxeles (50px menos)
+    clonedElement.style.width = '744px'
+    clonedElement.style.maxWidth = '744px'
     
     // Agregar temporalmente al DOM para que html2pdf pueda procesarlo
     document.body.appendChild(container)
@@ -719,8 +719,8 @@ function App() {
     // Configuración optimizada de html2pdf para formato A4
     // A4 (210mm x 297mm) es el estándar internacional para documentos profesionales
     const opt = {
-      margin: [15, 15, 15, 15], // Márgenes: [top, right, bottom, left] en mm
-      // Márgenes de 15mm proporcionan espacio profesional sin desperdiciar área útil
+      margin: [5, 5, 5, 5], // Márgenes reducidos: [top, right, bottom, left] en mm
+      // Márgenes mínimos para aprovechar mejor el espacio del PDF
       filename: 'cotizacion.pdf',
       image: { 
         type: 'jpeg', 
@@ -747,7 +747,7 @@ function App() {
             clonedElement.style.opacity = '1'
             clonedElement.style.display = 'block'
             clonedElement.style.position = 'relative'
-            clonedElement.style.width = '210mm'
+            clonedElement.style.width = '197mm' // Reducido para que coincida con 744px
             clonedElement.style.background = 'white'
             
             // Asegurar que todas las páginas sean visibles en el clon
@@ -1537,7 +1537,31 @@ function QuoteModal({ quoteData, onClose, formatCurrency, generatePDFBlob, downl
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>×</button>
         
-        <div className="quote-document">
+        {/* Encabezado de previsualización */}
+        <div style={{ 
+          padding: '1rem 1.5rem', 
+          borderBottom: '2px solid #e0e0e0',
+          backgroundColor: '#f5f7fa',
+          borderRadius: '10px 10px 0 0'
+        }}>
+          <h2 style={{ 
+            margin: 0, 
+            fontSize: '1.25rem', 
+            fontWeight: 600, 
+            color: '#1e3a5f' 
+          }}>
+            📄 Previsualización del Presupuesto
+          </h2>
+          <p style={{ 
+            margin: '0.5rem 0 0 0', 
+            fontSize: '0.85rem', 
+            color: '#666' 
+          }}>
+            Revisa el presupuesto antes de enviarlo. Este es el formato que se generará en el PDF.
+          </p>
+        </div>
+        
+        <div className="quote-document" style={{ marginTop: 0 }}>
           {/* HOJA 1: Header, Cliente, Proyecto, Materiales */}
           <div className="quote-page-1">
             {/* Header con ondas */}
